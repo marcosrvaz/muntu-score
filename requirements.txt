@@ -1,0 +1,6 @@
+gradio
+scenedetect[opencv]
+pydub
+numpy
+replicate
+python-dotenv
