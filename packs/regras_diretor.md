@@ -20,3 +20,8 @@ Nota de vocabulário: "engraçado" aqui inclui divertido/fun/alto-astral — nã
 - modernidade, coisa jovem e descolada -> indie rock OU indie eletrônico
 - brasilidade -> ritmos brasileiros: samba, pagode, baião; vale fusão (samba rock, música brasileira contemporânea)
 - Brasil urbano/favela/energia de rua -> funk carioca, kuduro, pagode baiano e derivações
+- sofisticação -> música francesa (cantada em francês)
+- fashion/moda -> eletrônica minimalista sofisticada
+- cosméticos (sério) -> eletrônica soft/lenta e mínima, bossa japonesa; OU reggaeton ESTILIZADO soft (beleza feminina)
+- tecnologia -> eletrônica um pouco mais rápida
+- reggaeton EXAGERADO -> vira comédia (nunca em cosmético sério)
