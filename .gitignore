@@ -14,3 +14,4 @@ __pycache__/
 # placeholders de teste (assets reais entram depois)
 assets/sample.mp4
 assets/stems/default/hit.wav
+corpus/
