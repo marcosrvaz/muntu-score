@@ -18,3 +18,5 @@ Nota de vocabulário: "engraçado" aqui inclui divertido/fun/alto-astral — nã
 - força/atitude urbana (sincero) -> hip hop/rap estilo Eminem "8 Mile"
 - comercial de CARRO que precisa passar força -> épica clássica OU hip hop estilo 8 Mile
 - modernidade, coisa jovem e descolada -> indie rock OU indie eletrônico
+- brasilidade -> ritmos brasileiros: samba, pagode, baião; vale fusão (samba rock, música brasileira contemporânea)
+- Brasil urbano/favela/energia de rua -> funk carioca, kuduro, pagode baiano e derivações
