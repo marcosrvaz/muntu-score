@@ -19,6 +19,7 @@ Nota de vocabulário: "engraçado" aqui inclui divertido/fun/alto-astral — nã
 - emoção sincera (crianças, pessoas com deficiência, superação emotiva) -> folk emocional
 - comercial sério/reflexivo -> eletrônica obscura, hip hop obscuro ou trip hop
 - estrada, liberdade, aventura, MOTO -> rock clássico anos 70
+- situação latino-americana, política ou de protesto -> ritmos latinos modernos (cúmbia), puros ou fundidos com eletrônica/acústico
 - força/atitude urbana (sincero) -> hip hop/rap estilo Eminem "8 Mile"
 - comercial de CARRO que precisa passar força -> épica clássica OU hip hop estilo 8 Mile
 - modernidade, coisa jovem e descolada -> indie rock OU indie eletrônico
