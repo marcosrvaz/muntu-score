@@ -327,6 +327,16 @@ def bed_para_clima(clima: str | None, register: str | None = None, bpm: int | No
     return baixa_faixa(tid, cache_dir) if tid else None
 
 
+def _clima_efetivo(parte: dict) -> str:
+    """Clima usado na BUSCA do catalogo. ironia kitsch/parodia -> a faixa certa e comica
+    (quirky/kitsch), nao o clima sincero que o rotulo diz — o bug Pringles: 'romantic'
+    sincero perdeu o humor. deadpan preserva (a graca E a musica straight)."""
+    clima = (parte.get("clima") or "").strip().lower()
+    if (parte.get("ironia") or "").strip().lower() in ("kitsch", "parodia"):
+        return "comedic"
+    return clima
+
+
 def popula_beds(timeline: dict, cache_dir: str = CACHE_DIR,
                 so_score: bool = True) -> dict:
     """Seta `bed_file` nas partes da timeline usando o mood que o reader ja emitiu — a fonte
@@ -344,7 +354,7 @@ def popula_beds(timeline: dict, cache_dir: str = CACHE_DIR,
         if so_score and parte.get("tipo") == "diegetic":
             continue
         # clima = casamento preciso (mood= id); mood = registro free-text (term= refino)
-        path = bed_para_clima(parte.get("clima"), parte.get("mood"),
+        path = bed_para_clima(_clima_efetivo(parte), parte.get("mood"),
                               parte.get("bpm"), cache_dir)
         if path:
             parte["bed_file"] = path

@@ -1,6 +1,19 @@
 from muntu import epidemic
 
 
+def test_clima_efetivo_kitsch_vira_comedic():
+    # bug Pringles: parte "romantic" sincera perdeu o humor; ironia corrige a QUERY
+    assert epidemic._clima_efetivo({"clima": "romantic", "ironia": "kitsch"}) == "comedic"
+    assert epidemic._clima_efetivo({"clima": "tender", "ironia": "parodia"}) == "comedic"
+
+
+def test_clima_efetivo_sincero_e_deadpan_preservam():
+    assert epidemic._clima_efetivo({"clima": "romantic", "ironia": "sincero"}) == "romantic"
+    # deadpan: a graca e a musica straight -> busca o clima como esta
+    assert epidemic._clima_efetivo({"clima": "epic", "ironia": "deadpan"}) == "epic"
+    assert epidemic._clima_efetivo({"clima": "tense"}) == "tense"
+
+
 def test_indisponivel_sem_key(monkeypatch):
     monkeypatch.delenv("EPIDEMIC_API_KEY", raising=False)
     assert epidemic.epidemic_disponivel() is False

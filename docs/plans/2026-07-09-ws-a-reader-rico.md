@@ -267,7 +267,7 @@ def test_comico_sem_ironia_mantem_kitsch_legado():
 - Consumes: campo `ironia` da parte (Task 2); `CLIMA_EPIDEMIC` existente.
 - Produces: `_clima_efetivo(parte) -> str` — clima usado na busca; contrato externo de `popula_beds` inalterado.
 
-- [ ] **Step 1: Testes que falham**
+- [x] **Step 1: Testes que falham**
 
 ```python
 def test_clima_efetivo_kitsch_vira_comedic():
@@ -283,9 +283,9 @@ def test_clima_efetivo_sincero_e_deadpan_preservam():
     assert epidemic._clima_efetivo({"clima": "tense"}) == "tense"
 ```
 
-- [ ] **Step 2: Rodar e ver falhar** — `pytest tests/test_epidemic.py -v` → FAIL.
+- [x] **Step 2: Rodar e ver falhar** — `pytest tests/test_epidemic.py -v` → FAIL.
 
-- [ ] **Step 3: Implementar** — em `epidemic.py`, antes de `popula_beds`:
+- [x] **Step 3: Implementar** — em `epidemic.py`, antes de `popula_beds`:
 
 ```python
 def _clima_efetivo(parte: dict) -> str:
@@ -300,9 +300,9 @@ def _clima_efetivo(parte: dict) -> str:
 
 E dentro de `popula_beds`, onde o clima da parte é lido pra chamar `bed_para_clima`, trocar a leitura direta por `_clima_efetivo(parte)`.
 
-- [ ] **Step 4: Rodar** — `pytest tests/test_epidemic.py -v` → PASS; `pytest tests/` → verde.
+- [x] **Step 4: Rodar** — `pytest tests/test_epidemic.py -v` → PASS; `pytest tests/` → verde.
 
-- [ ] **Step 5: PARAR — usuário revisa+commita.**
+- [x] **Step 5: PARAR — usuário revisa+commita.**
 
 ---
 
