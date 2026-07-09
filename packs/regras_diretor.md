@@ -17,6 +17,8 @@ Nota de vocabulário: "engraçado" aqui inclui divertido/fun/alto-astral — nã
 - narrativa de superação/"saga do herói" (sincero) -> épica clássica orquestral, passa FORÇA
 - superação (sincero) -> hip hop/rap também serve (clássico de filme de superação)
 - emoção sincera (crianças, pessoas com deficiência, superação emotiva) -> folk emocional
+- comercial sério/reflexivo -> eletrônica obscura, hip hop obscuro ou trip hop
+- estrada, liberdade, aventura, MOTO -> rock clássico anos 70
 - força/atitude urbana (sincero) -> hip hop/rap estilo Eminem "8 Mile"
 - comercial de CARRO que precisa passar força -> épica clássica OU hip hop estilo 8 Mile
 - modernidade, coisa jovem e descolada -> indie rock OU indie eletrônico
