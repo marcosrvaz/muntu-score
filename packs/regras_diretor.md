@@ -14,3 +14,6 @@ Nota de vocabulário: "engraçado" aqui inclui divertido/fun/alto-astral — nã
 - contexto divertido ou irônico -> latinas: rumba, mambo, bolero
 - situação engraçada com energia caótica/festiva -> étnicas rápidas: balkan, leste europeu, mariachi
 - situação engraçada com energia de banda ao vivo -> fusão rock+balkan estilo Gogol Bordello
+- narrativa de superação/"saga do herói" (sincero) -> épica clássica orquestral, passa FORÇA
+- força/atitude urbana (sincero) -> hip hop/rap estilo Eminem "8 Mile"
+- comercial de CARRO que precisa passar força -> épica clássica OU hip hop estilo 8 Mile
