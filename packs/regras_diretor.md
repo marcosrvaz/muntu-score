@@ -4,5 +4,13 @@ Uma regra por linha: `contexto -> direção musical`. PT ou EN. O reader continu
 decidindo QUANDO cada regra se aplica — a leitura do filme manda (regra não é gatilho
 cego; é convenção de craft que o reader usa quando a cena pede).
 
-- romance/emoção tratada com seriedade exagerada em comédia -> kitsch deliberado: bolero/balada latina cafona, acordeão ou sax
-- (Marcos vai ditando as próximas — 1 linha cada)
+Nota de vocabulário: "engraçado" aqui inclui divertido/fun/alto-astral — não só piada.
+
+- clima divertido, alto astral, verão, praia (com pitada de ironia) -> surf music
+- situação romântica E engraçada/absurda ao mesmo tempo -> romântico anos 80 EXAGERADO, estilo Lionel Richie (kitsch deliberado)
+- contexto engraçado com situação clássica/cerimonial -> clássicos muito conhecidos usados com ironia: Danúbio Azul, Flauta Mágica (Mozart), Marcha Nupcial, ópera
+- narrativa engraçada que pede exagero -> música ÉPICA exagerada com atmosfera brega/kitsch: hard rock estilo trilha de Rocky Balboa
+- contexto engraçado com energia/ação -> trilha anos 80 de filme: Top Gun, a-ha, hard rock 80s (sempre com o exagero cômico, nunca sério)
+- contexto divertido ou irônico -> latinas: rumba, mambo, bolero
+- situação engraçada com energia caótica/festiva -> étnicas rápidas: balkan, leste europeu, mariachi
+- situação engraçada com energia de banda ao vivo -> fusão rock+balkan estilo Gogol Bordello
