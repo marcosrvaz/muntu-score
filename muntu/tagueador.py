@@ -21,14 +21,16 @@ MAX_TOKENS = 48000   # ad longo (100+ cenas, ex. Sky La famiglia) truncava em 16
 
 
 PROMPT_MUSICA = (
-    "You are a MUSIC SUPERVISOR analyzing ONE real TV commercial as a montage of N scenes "
-    "labeled S1..SN (chronological). Your job is to TAG the music actually used, part by "
-    "part, in a fixed schema — this builds a reference library of how real ads score story.\n"
+    "You are a MUSIC SUPERVISOR analyzing ONE real TV commercial. You SEE the film as a "
+    "montage of N scenes labeled S1..SN (chronological) AND you HEAR its full soundtrack "
+    "(attached audio). Tag the music ACTUALLY PLAYING in the audio, part by part — the "
+    "visuals only give story context; NEVER guess the music from the footage. This builds "
+    "a reference library of how real ads score story.\n"
     "For each musical part (a stretch with one musical treatment) return:\n"
     "  - span: which scenes it covers, free text (e.g. \"S1-S3, the party opening\").\n"
     "  - era: the SOUND's period (\"1980s\", \"1960s\", \"modern\").\n"
-    "  - registro: short specific register/genre description of what you HEAR implied by "
-    "the footage (\"cheesy 80s power ballad\", \"quirky comedic pizzicato\").\n"
+    "  - registro: short specific register/genre description of what you HEAR in the "
+    "audio (\"cheesy 80s power ballad\", \"quirky comedic pizzicato\").\n"
     "  - ironia: \"sincero\" (straight emotion) | \"kitsch\" (deliberately cheesy/campy) | "
     "\"deadpan\" (straight music AGAINST absurdity) | \"parodia\" (mocks a genre).\n"
     "  - cultura: cultural/regional reference (\"brega\", \"bossa nova\", \"balkan brass\", "
@@ -58,7 +60,13 @@ def _chama(content: list, max_tokens: int = MAX_TOKENS) -> dict:
         timeout=240.0,
     )
     r.raise_for_status()
-    return mood._parse_json(r.json()["choices"][0]["message"]["content"])
+    choice = r.json()["choices"][0]
+    finish = choice.get("finish_reason")
+    if finish and finish != "stop":
+        # diagnostico honesto: length = subir max_tokens; content_filter/safety = outro bicho
+        import sys
+        print(f"[muntu] tagueador finish_reason={finish}", file=sys.stderr)
+    return mood._parse_json(choice["message"]["content"])
 
 
 def _normaliza_musica(data: dict) -> list[dict]:
@@ -74,22 +82,33 @@ def _normaliza_musica(data: dict) -> list[dict]:
 
 
 def tagueia_musica(video_path: str, cortes: list[float], duracao: float) -> list[dict]:
-    """Ad real -> tags de música por parte. [] se indisponível/falha (best-effort)."""
+    """Ad real -> tags de música por parte OUVINDO a trilha (montagem dá só o contexto
+    de história). Calibração do spike 2026-07-09: só-frames fazia o modelo CHUTAR a
+    música pelo visual (BK "epic fanfare" e Mariachis "indie rock" — ambos errados de
+    ouvido). [] se indisponível/falha (best-effort)."""
     if not disponivel():
         return []
+    wav = None
     try:
         m = mood.montagem_do_filme(video_path, cortes, duracao)
         if m is None:
             return []
         b64 = base64.standard_b64encode(m).decode("utf-8")
+        wav = _extrai_wav(video_path)
+        with open(wav, "rb") as f:
+            b64_wav = base64.standard_b64encode(f.read()).decode("utf-8")
         return _normaliza_musica(_chama([
             {"type": "text", "text": PROMPT_MUSICA},
             {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}},
+            {"type": "input_audio", "input_audio": {"data": b64_wav, "format": "wav"}},
         ]))
     except Exception as e:                     # noqa: BLE001 — best-effort
         import sys
         print(f"[muntu] tagueador musica falhou ({type(e).__name__}: {e})", file=sys.stderr)
         return []
+    finally:
+        if wav and os.path.exists(wav):
+            os.remove(wav)
 
 
 PROMPT_AUDIO = (
