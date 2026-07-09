@@ -94,7 +94,7 @@ def tagueia_musica(video_path: str, cortes: list[float], duracao: float) -> list
         if m is None:
             return []
         b64 = base64.standard_b64encode(m).decode("utf-8")
-        wav = _extrai_wav(video_path)
+        wav = _extrai_wav(video_path, sr=32000)   # música pede banda; 16k mascarou registro
         with open(wav, "rb") as f:
             b64_wav = base64.standard_b64encode(f.read()).decode("utf-8")
         return _normaliza_musica(_chama([
@@ -127,12 +127,13 @@ PROMPT_AUDIO = (
 )
 
 
-def _extrai_wav(video_path: str) -> str:
-    """Trilha de áudio do ad -> wav 16kHz mono temp (análise de fala/SFX não precisa de
-    mais, e o payload base64 fica pequeno). Chamador apaga."""
+def _extrai_wav(video_path: str, sr: int = 16000) -> str:
+    """Trilha de áudio do ad -> wav mono temp. 16kHz basta pra fala/SFX (payload pequeno);
+    MÚSICA pede 32kHz — a 16k tudo acima de 8kHz some e o Gemini não distingue registro
+    fino (Pepsi Banheira: nem bossa nem Danúbio Azul foram ouvidos a 16k). Chamador apaga."""
     fd, dst = tempfile.mkstemp(suffix=".wav")
     os.close(fd)
-    subprocess.run(["ffmpeg", "-y", "-i", video_path, "-ac", "1", "-ar", "16000", dst],
+    subprocess.run(["ffmpeg", "-y", "-i", video_path, "-ac", "1", "-ar", str(sr), dst],
                    check=True, capture_output=True)
     return dst
 
