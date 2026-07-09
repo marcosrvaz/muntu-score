@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "p=$(jq -r '.tool_input.file_path // empty'); echo \"$p\" | grep -qE '(^|/)\\.env($|\\.)' && { echo 'BLOCKED: edicao de .env / secrets proibida' >&2; exit 2; }; exit 0"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *muntu/*.py) t=\"tests/test_$(basename \"$f\")\"; [ -f \"$t\" ] && python -m pytest \"$t\" -q 2>&1 | tail -20 || true;; esac; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}

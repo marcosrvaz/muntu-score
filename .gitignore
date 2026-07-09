@@ -3,6 +3,10 @@ venv/
 outputs/
 __pycache__/
 *.pyc
+.pytest_cache/
+.backups/
+*.bak
+*.bak-*
 
 # placeholders de teste (assets reais entram depois)
 assets/sample.mp4
