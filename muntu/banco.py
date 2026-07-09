@@ -138,3 +138,34 @@ def busca_hibrida(texto: str | None = None, audio_path: str | None = None,
     except Exception as e:                     # noqa: BLE001 — best-effort
         print(f"[muntu] busca_hibrida falhou ({type(e).__name__}: {e})", file=sys.stderr)
         return []
+
+
+def _query_da_parte(parte: dict, era_filme: str = "") -> str:
+    """Parte da timeline -> texto de query (mesmo vocabulário do descritor de ingestão:
+    consistência query<->documento é o que faz o text-embed casar)."""
+    return tags_mod.descritor({
+        "era": era_filme, "registro": parte.get("mood") or parte.get("clima") or "",
+        "ironia": parte.get("ironia"), "cultura": parte.get("cultura") or "",
+        "funcao": parte.get("papel") or "",
+        "instrumentacao": parte.get("instrumentacao") or [],
+    })
+
+
+def popula_beds(timeline: dict, so_score: bool = True) -> None:
+    """A->B via banco curado: MESMO contrato de epidemic.popula_beds (muta partes
+    setando bed_file -> reusa o encanamento PIN camada 2 de trilha.py, zero mudança lá).
+    Ponteiro epidemic (sem áudio local) não vira bed aqui. Best-effort por parte."""
+    if not banco_disponivel():
+        return
+    era = (timeline.get("era") or "").strip()
+    for parte in timeline.get("partes") or []:
+        if so_score and parte.get("tipo") == "diegetic":
+            continue
+        if parte.get("bed_file"):              # PIN do usuário vence sempre
+            continue
+        hits = busca_hibrida(texto=_query_da_parte(parte, era), tipo="music", n=3)
+        for h in hits:
+            p = h.get("pointer") or ""
+            if not p.startswith("epidemic:") and os.path.exists(p):
+                parte["bed_file"] = p
+                break

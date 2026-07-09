@@ -70,3 +70,28 @@ def test_busca_hibrida_monta_rpc(monkeypatch):
     assert chamadas["params"]["filtro_era"] == "1980s"
     assert chamadas["params"]["q_audio"] is None
     assert out[0]["pointer"] == "p.mp3"
+
+
+def test_popula_beds_seta_bed_file(monkeypatch, tmp_path):
+    mp3 = tmp_path / "faixa.mp3"
+    mp3.write_bytes(b"x")
+    monkeypatch.setattr(banco, "banco_disponivel", lambda: True)
+    monkeypatch.setattr(banco, "busca_hibrida",
+                        lambda **kw: [{"pointer": str(mp3), "rrf": 0.03}])
+    tl = {"era": "1980s", "partes": [
+        {"tipo": "score", "clima": "romantic", "mood": "cheesy ballad",
+         "ironia": "kitsch", "start": 0.0, "end": 10.0},
+        {"tipo": "diegetic", "clima": "joyful", "start": 10.0, "end": 20.0},
+    ]}
+    banco.popula_beds(tl)
+    assert tl["partes"][0]["bed_file"] == str(mp3)
+    assert "bed_file" not in tl["partes"][1]          # so_score default
+
+
+def test_popula_beds_ignora_ponteiro_epidemic(monkeypatch):
+    monkeypatch.setattr(banco, "banco_disponivel", lambda: True)
+    monkeypatch.setattr(banco, "busca_hibrida",
+                        lambda **kw: [{"pointer": "epidemic:abc123", "rrf": 0.03}])
+    tl = {"partes": [{"tipo": "score", "clima": "epic", "mood": "big", "start": 0, "end": 9}]}
+    banco.popula_beds(tl)
+    assert "bed_file" not in tl["partes"][0]          # ponteiro sem áudio local
