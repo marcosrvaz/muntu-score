@@ -39,10 +39,14 @@ def test_normaliza_audio_sem_vo():
 
 
 def test_tagueia_ad_agrega(monkeypatch):
-    monkeypatch.setattr(tagueador, "tagueia_musica", lambda *a: [{"registro": "x"}])
+    from muntu import faixa_id
+    monkeypatch.setattr(tagueador, "tagueia_musica",
+                        lambda *a, **kw: [{"registro": "x"}])
     monkeypatch.setattr(tagueador, "tagueia_audio",
                         lambda *a: {"sfx": {"ambiencia": "y"}, "vo": None})
     monkeypatch.setattr(tagueador, "_analisa_video", lambda p: ([1.0], 10.0))
+    monkeypatch.setattr(faixa_id, "identifica", lambda p: [{"titulo": "t"}])
     out = tagueador.tagueia_ad("fake.mp4")
     assert out["musica"] == [{"registro": "x"}]
+    assert out["faixas"] == [{"titulo": "t"}]
     assert out["sfx"]["ambiencia"] == "y" and out["vo"] is None
