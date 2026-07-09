@@ -81,11 +81,30 @@ def _normaliza_musica(data: dict) -> list[dict]:
     return out
 
 
-def tagueia_musica(video_path: str, cortes: list[float], duracao: float) -> list[dict]:
+def _bloco_faixas(faixas: list[dict] | None) -> str:
+    """Matches do fingerprinting (faixa_id) -> bloco de ground truth no prompt. O Gemini
+    descreve registro mas não nomeia faixa; o AudD nomeia — quando há match, o modelo
+    DEVE ancorar era/cultura/registro na faixa real, não no que acha que ouviu."""
+    if not faixas:
+        return ""
+    linhas = []
+    for fx in faixas:
+        gen = f" [{', '.join(fx['generos'])}]" if fx.get("generos") else ""
+        ano = f" ({fx['ano']})" if fx.get("ano") else ""
+        linhas.append(f"- \"{fx.get('titulo', '')}\" — {fx.get('artista', '')}{ano}{gen}"
+                      f" heard around {fx.get('em_s', '?')}s")
+    return ("\nTracks IDENTIFIED in this ad's audio by fingerprinting (GROUND TRUTH — "
+            "anchor era/cultura/registro on these, do not contradict them):\n"
+            + "\n".join(linhas) + "\n")
+
+
+def tagueia_musica(video_path: str, cortes: list[float], duracao: float,
+                   faixas: list[dict] | None = None) -> list[dict]:
     """Ad real -> tags de música por parte OUVINDO a trilha (montagem dá só o contexto
     de história). Calibração do spike 2026-07-09: só-frames fazia o modelo CHUTAR a
     música pelo visual (BK "epic fanfare" e Mariachis "indie rock" — ambos errados de
-    ouvido). [] se indisponível/falha (best-effort)."""
+    ouvido). `faixas` (fingerprinting) entram como ground truth no prompt.
+    [] se indisponível/falha (best-effort)."""
     if not disponivel():
         return []
     wav = None
@@ -98,7 +117,7 @@ def tagueia_musica(video_path: str, cortes: list[float], duracao: float) -> list
         with open(wav, "rb") as f:
             b64_wav = base64.standard_b64encode(f.read()).decode("utf-8")
         return _normaliza_musica(_chama([
-            {"type": "text", "text": PROMPT_MUSICA},
+            {"type": "text", "text": PROMPT_MUSICA + _bloco_faixas(faixas)},
             {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}},
             {"type": "input_audio", "input_audio": {"data": b64_wav, "format": "wav"}},
         ]))
@@ -178,9 +197,13 @@ def _analisa_video(video_path: str) -> tuple[list[float], float]:
 
 
 def tagueia_ad(video_path: str) -> dict:
-    """Ad completo -> tags de música (vídeo) + SFX/VO (áudio). O deliverable do spike."""
+    """Ad completo -> ID de faixa (fingerprinting) + tags de música (vídeo+áudio) +
+    SFX/VO (áudio). O deliverable do spike."""
+    from muntu import faixa_id
     cortes, duracao = _analisa_video(video_path)
+    faixas = faixa_id.identifica(video_path)
     audio = tagueia_audio(video_path)
     return {"video": video_path,
-            "musica": tagueia_musica(video_path, cortes, duracao),
+            "faixas": faixas,
+            "musica": tagueia_musica(video_path, cortes, duracao, faixas=faixas),
             "sfx": audio["sfx"], "vo": audio["vo"]}
