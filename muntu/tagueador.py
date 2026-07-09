@@ -118,13 +118,13 @@ def tagueia_musica(video_path: str, cortes: list[float], duracao: float,
         if m is None:
             return []
         b64 = base64.standard_b64encode(m).decode("utf-8")
-        wav = _extrai_wav(video_path, sr=32000)   # música pede banda; 16k mascarou registro
+        wav = _extrai_audio(video_path, sr=32000)  # música pede banda; mp3 = payload 4x menor
         with open(wav, "rb") as f:
             b64_wav = base64.standard_b64encode(f.read()).decode("utf-8")
         return _normaliza_musica(_chama([
             {"type": "text", "text": PROMPT_MUSICA + _bloco_faixas(faixas)},
             {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}},
-            {"type": "input_audio", "input_audio": {"data": b64_wav, "format": "wav"}},
+            {"type": "input_audio", "input_audio": {"data": b64_wav, "format": "mp3"}},
         ]))
     except Exception as e:                     # noqa: BLE001 — best-effort
         import sys
@@ -151,14 +151,17 @@ PROMPT_AUDIO = (
 )
 
 
-def _extrai_wav(video_path: str, sr: int = 16000) -> str:
-    """Trilha de áudio do ad -> wav mono temp. 16kHz basta pra fala/SFX (payload pequeno);
-    MÚSICA pede 32kHz — a 16k tudo acima de 8kHz some e o Gemini não distingue registro
-    fino (Pepsi Banheira: nem bossa nem Danúbio Azul foram ouvidos a 16k). Chamador apaga."""
-    fd, dst = tempfile.mkstemp(suffix=".wav")
+def _extrai_audio(video_path: str, sr: int = 16000, fmt: str = "mp3") -> str:
+    """Trilha de áudio do ad -> arquivo mono temp. mp3 128k, não wav: ad de 105s em wav
+    32kHz vira ~9MB de base64 e o modelo não processa o áudio inteiro (MP Marte: música
+    entra depois do vento e ficou invisível 4 rodadas). 16kHz basta pra fala/SFX; MÚSICA
+    pede 32kHz (a 16k o registro fino some — caso Pepsi/Danúbio). Chamador apaga."""
+    fd, dst = tempfile.mkstemp(suffix=f".{fmt}")
     os.close(fd)
-    subprocess.run(["ffmpeg", "-y", "-i", video_path, "-ac", "1", "-ar", str(sr), dst],
-                   check=True, capture_output=True)
+    cmd = ["ffmpeg", "-y", "-i", video_path, "-ac", "1", "-ar", str(sr)]
+    if fmt == "mp3":
+        cmd += ["-b:a", "128k"]
+    subprocess.run(cmd + [dst], check=True, capture_output=True)
     return dst
 
 
@@ -178,12 +181,12 @@ def tagueia_audio(video_path: str) -> dict:
         return {"sfx": None, "vo": None}
     wav = None
     try:
-        wav = _extrai_wav(video_path)
+        wav = _extrai_audio(video_path)
         with open(wav, "rb") as f:
             b64 = base64.standard_b64encode(f.read()).decode("utf-8")
         return _normaliza_audio(_chama([
             {"type": "text", "text": PROMPT_AUDIO},
-            {"type": "input_audio", "input_audio": {"data": b64, "format": "wav"}},
+            {"type": "input_audio", "input_audio": {"data": b64, "format": "mp3"}},
         ]))
     except Exception as e:                     # noqa: BLE001 — best-effort
         import sys
