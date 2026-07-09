@@ -18,8 +18,9 @@ import os
 
 from muntu import mood, tags as tags_mod
 
-MAX_TOKENS = 48000   # segmentacao narrativa + N partes + guidance rica = MUITO raciocinio Gemini;
-#                      24000 estourava (finish=length -> content vazio -> timeline {} -> fallback).
+MAX_TOKENS = 64000   # segmentacao narrativa + N partes + guidance rica = MUITO raciocinio Gemini;
+#                      24000 estourava; 48000 voltou a estourar apos calibrar ironia (prompt
+#                      maior -> mais raciocinio) -> finish=length/error -> content vazio -> fallback.
 MIN_PARTE_S = 1.5    # parte mais curta que isso vira silencio ao gerar -> funde na vizinha
 
 PROMPT = (
@@ -66,7 +67,13 @@ PROMPT = (
     "— the comedy of contrast), \"parodia\" (mocks a recognizable genre). In a COMEDY film "
     "every score part MUST take a comedic stance — kitsch, deadpan or parodia — never plain "
     "sincero: a sincere register in a comedy loses the joke (a romantic scene in a comedy "
-    "is brega/kitsch or deadpan, not a sincere love ballad).\n"
+    "is brega/kitsch or deadpan, not a sincere love ballad). When the comedy comes from "
+    "treating an absurd premise with FULL sincere emotion (a life story, a romance, an epic "
+    "journey — played completely straight), that sincere treatment IS the joke: tag it "
+    "kitsch and make the register deliberately cheesy/over-sentimental (e.g. an epic 80s "
+    "power ballad with saxophone), NOT deadpan. Deadpan applies ONLY when the footage itself "
+    "stays dry, minimal and restrained — no emotional montage, no swelling arc. A "
+    "sincere-looking life montage built on an absurd premise = kitsch, always.\n"
     "  - cultura: a cultural/regional musical reference when the scene calls for one "
     "(\"brega\", \"bossa nova\", \"sertanejo\", \"balkan brass\", \"surf rock\", \"mariachi\"); "
     "empty string if none.\n"
