@@ -169,3 +169,11 @@ def popula_beds(timeline: dict, so_score: bool = True) -> None:
             if not p.startswith("epidemic:") and os.path.exists(p):
                 parte["bed_file"] = p
                 break
+
+
+def busca_por_draft(draft_path: str, texto: str | None = None, n: int = 5) -> list[dict]:
+    """Bridge A->B (D9): o draft que a geração A criou (e que ACERTA o brief) vira a
+    query de áudio — CLAP acha a faixa REAL mais parecida no banco. peso_audio > texto:
+    quem manda é o SOM que o usuário já aprovou, o texto só desempata."""
+    return busca_hibrida(texto=texto, audio_path=draft_path, tipo="music", n=n,
+                         peso_texto=0.5, peso_audio=1.0)

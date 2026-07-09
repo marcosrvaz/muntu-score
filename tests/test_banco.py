@@ -95,3 +95,17 @@ def test_popula_beds_ignora_ponteiro_epidemic(monkeypatch):
     tl = {"partes": [{"tipo": "score", "clima": "epic", "mood": "big", "start": 0, "end": 9}]}
     banco.popula_beds(tl)
     assert "bed_file" not in tl["partes"][0]          # ponteiro sem áudio local
+
+
+def test_busca_por_draft_passa_audio(monkeypatch):
+    visto = {}
+
+    def fake_busca(**kw):
+        visto.update(kw)
+        return [{"pointer": "real.mp3"}]
+
+    monkeypatch.setattr(banco, "busca_hibrida", fake_busca)
+    out = banco.busca_por_draft("/tmp/draft.mp3", texto="80s ballad")
+    assert visto["audio_path"] == "/tmp/draft.mp3"
+    assert visto["peso_audio"] > visto["peso_texto"]   # o SOM do draft manda
+    assert out[0]["pointer"] == "real.mp3"
