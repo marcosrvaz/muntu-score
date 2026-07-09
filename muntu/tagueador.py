@@ -147,3 +147,19 @@ def tagueia_audio(video_path: str) -> dict:
     finally:
         if wav and os.path.exists(wav):
             os.remove(wav)
+
+
+def _analisa_video(video_path: str) -> tuple[list[float], float]:
+    """Cortes+duração via analyzer (import tardio: cv2/scenedetect pesados)."""
+    from muntu.analyzer import analyze
+    brief = analyze(video_path)
+    return brief["cortes"], brief["duracao"]
+
+
+def tagueia_ad(video_path: str) -> dict:
+    """Ad completo -> tags de música (vídeo) + SFX/VO (áudio). O deliverable do spike."""
+    cortes, duracao = _analisa_video(video_path)
+    audio = tagueia_audio(video_path)
+    return {"video": video_path,
+            "musica": tagueia_musica(video_path, cortes, duracao),
+            "sfx": audio["sfx"], "vo": audio["vo"]}
