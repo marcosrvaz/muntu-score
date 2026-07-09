@@ -20,7 +20,7 @@ Cria um commit seguindo as convencoes do Muntu Score.
 1. `git status` + `git diff --staged` (e `git diff` pra unstaged). Entende o que mudou.
 2. Se nada staged, `git add` so os arquivos relevantes a mudanca (nunca `git add -A` cego — evita secrets/lixo).
 3. Confirma que nenhum path sensivel entrou: `git diff --staged --name-only | grep -E '\.env|\.bak|/outputs/|/\.backups/'` deve vir vazio. Se nao, aborta e avisa.
-4. Roda `python -m pytest -q` se houve mudanca em `muntu/` ou `pipeline.py`. Falhou = avisa antes de commitar.
+4. Roda `./venv/bin/python -m pytest -q` (nao ha `python` no PATH; usa o venv) se houve mudanca em `muntu/` ou `pipeline.py`. Falhou = avisa antes de commitar.
 5. Commit com HEREDOC (uma mensagem, sem trailer):
 
 ```bash

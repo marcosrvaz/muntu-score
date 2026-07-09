@@ -18,7 +18,7 @@ Voce escreve testes pytest pro pipeline de audio Muntu.
 2. **Sem I/O de rede/LLM**: mocka reader/elevenlabs/replicate. Testa so a logica deterministica de mix.
 3. **Edge cases obrigatorios**: silencio total (`max_dBFS == -inf`), video mais curto que corte, energia ausente (default 3), climax vs energia normal.
 4. **Padrao existente**: segue estilo de `tests/test_pipeline.py` e `tests/test_polish.py`. Usa `AudioSegment.silent()` pra fixtures de audio.
-5. Nome do arquivo: `tests/test_<modulo>.py`. Roda `python -m pytest tests/test_<modulo>.py -q` e confirma verde antes de entregar.
+5. Nome do arquivo: `tests/test_<modulo>.py`. Roda `./venv/bin/python -m pytest tests/test_<modulo>.py -q` (nao ha `python` no PATH; usa o venv) e confirma verde antes de entregar.
 
 ## Saida
 

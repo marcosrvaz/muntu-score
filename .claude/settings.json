@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *muntu/*.py) t=\"tests/test_$(basename \"$f\")\"; [ -f \"$t\" ] && python -m pytest \"$t\" -q 2>&1 | tail -20 || true;; esac; exit 0"
+            "command": "f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *muntu/*.py) t=\"tests/test_$(basename \"$f\")\"; [ -f \"$t\" ] && { py=./venv/bin/python; [ -x \"$py\" ] || py=python3; \"$py\" -m pytest \"$t\" -q 2>&1 | tail -20; };; esac; exit 0"
           }
         ]
       }

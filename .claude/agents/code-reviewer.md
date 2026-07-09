@@ -24,4 +24,4 @@ Voce revisa codigo Python do pipeline de audio scoring Muntu.
 ## Formato de saida
 
 Uma linha por achado: `arquivo:linha SEVERIDADE: problema. fix.`
-Sem elogio. Sem scope creep. Roda `python -m pytest -q` no fim e reporta pass/fail.
+Sem elogio. Sem scope creep. Roda `./venv/bin/python -m pytest -q` no fim (nao ha `python` no PATH; usa o venv) e reporta pass/fail.

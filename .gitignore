@@ -7,6 +7,8 @@ __pycache__/
 .backups/
 *.bak
 *.bak-*
+.claude/settings.local.json
+.claude/settings.local.json.tmp.*
 
 # placeholders de teste (assets reais entram depois)
 assets/sample.mp4
