@@ -16,6 +16,7 @@ Nota de vocabulário: "engraçado" aqui inclui divertido/fun/alto-astral — nã
 - situação engraçada com energia de banda ao vivo -> fusão rock+balkan estilo Gogol Bordello
 - narrativa de superação/"saga do herói" (sincero) -> épica clássica orquestral, passa FORÇA
 - superação (sincero) -> hip hop/rap também serve (clássico de filme de superação)
+- emoção sincera (crianças, pessoas com deficiência, superação emotiva) -> folk emocional
 - força/atitude urbana (sincero) -> hip hop/rap estilo Eminem "8 Mile"
 - comercial de CARRO que precisa passar força -> épica clássica OU hip hop estilo 8 Mile
 - modernidade, coisa jovem e descolada -> indie rock OU indie eletrônico
