@@ -43,23 +43,27 @@ def fator_de_warp(tempo_bed: float | None, bpm_grade: float | None,
 
 
 def detecta_tempo(bed) -> float | None:
-    """Tempo (BPM) do bed via librosa.beat_track. None se librosa ausente ou audio vazio."""
+    """Tempo (BPM) do bed via librosa.beat_track. None se librosa ausente, audio vazio ou
+    a deteccao falhar (best-effort: warp_bed precisa degradar pro bed original)."""
     try:
         import librosa
         import numpy as np
     except ImportError:
         return None
     samples = np.array(bed.get_array_of_samples()).astype(np.float32)
-    if bed.channels == 2:
-        samples = samples.reshape((-1, 2)).mean(axis=1)
+    if bed.channels > 1:
+        samples = samples.reshape((-1, bed.channels)).mean(axis=1)
     if samples.size == 0:
         return None
     pico = float(np.abs(samples).max())
     if pico > 0:
         samples = samples / pico
-    tempo, _ = librosa.beat.beat_track(y=samples, sr=bed.frame_rate)
-    tempo = float(np.atleast_1d(tempo)[0])      # librosa pode devolver array
-    return tempo or None
+    try:
+        tempo, _ = librosa.beat.beat_track(y=samples, sr=bed.frame_rate)
+        tempo = float(np.atleast_1d(tempo)[0])      # librosa pode devolver array
+        return tempo or None
+    except Exception:                                # noqa: BLE001 — deteccao e best-effort
+        return None
 
 
 def _rubberband(bed, tempo: float):

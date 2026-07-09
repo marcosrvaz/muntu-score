@@ -2,7 +2,8 @@ import os
 
 from muntu import foley
 from muntu.foley import (
-    foley_disponivel, _janela, seleciona_assinatura, _cache_key, gera_foley_de_corte,
+    foley_disponivel, _janela, _energia_da_cena, seleciona_assinatura, _cache_key,
+    gera_foley_de_corte,
 )
 
 
@@ -61,6 +62,20 @@ def test_assinatura_vazio_sem_acentos():
     assert seleciona_assinatura([], cenas=None) == set()
 
 
+# ---- energia da cena (pura) ----
+
+def test_energia_da_cena_no_limite_final_pega_ultima_cena():
+    # t == end da ULTIMA cena nao pode cair no default (desloca o climax)
+    cenas = [{"start": 0, "end": 5, "energia": 2}, {"start": 5, "end": 10, "energia": 9}]
+    assert _energia_da_cena(10, cenas) == 9.0
+
+
+def test_energia_da_cena_no_limite_entre_cenas_pega_a_seguinte():
+    # fronteira entre cenas nao-ultimas continua exclusiva no fim (comportamento existente)
+    cenas = [{"start": 0, "end": 5, "energia": 2}, {"start": 5, "end": 10, "energia": 9}]
+    assert _energia_da_cena(5, cenas) == 9.0
+
+
 # ---- cache key (pura, deterministica) ----
 
 def test_cache_key_muda_com_corte():
@@ -68,6 +83,18 @@ def test_cache_key_muda_com_corte():
     b = _cache_key("v.mp4", 6.0)
     assert a != b
     assert _cache_key("v.mp4", 3.0) == a      # deterministica
+
+
+def test_cache_key_muda_com_tamanho_do_arquivo(monkeypatch, tmp_path):
+    # basename+mtime iguais mas tamanhos diferentes = videos distintos -> chaves distintas
+    v1, v2 = tmp_path / "clip.mp4", tmp_path / "sub" / "clip.mp4"
+    v2.parent.mkdir()
+    v1.write_bytes(b"a" * 10)
+    v2.write_bytes(b"a" * 20)
+    mt = 1_700_000_000
+    os.utime(v1, (mt, mt))
+    os.utime(v2, (mt, mt))
+    assert _cache_key(str(v1), 3.0) != _cache_key(str(v2), 3.0)
 
 
 # ---- cache corrompido nao pode quebrar o contrato best-effort ----

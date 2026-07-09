@@ -2,6 +2,7 @@ import shutil
 import subprocess
 
 import pytest
+from pydub import AudioSegment
 
 from muntu.warp import fator_de_warp, detecta_tempo, warp_bed
 
@@ -77,3 +78,56 @@ def test_warp_bed_nao_quebra_e_ajusta_duracao():
     out = warp_bed(bed, bpm_grade=125.0)      # pede leve aceleracao
     # best-effort: sempre devolve um AudioSegment tocavel
     assert len(out) > 0
+
+
+# ---- downmix multicanal (>2ch) ----
+
+@pytest.mark.skipif(not _tem_librosa(), reason="librosa ausente")
+def test_detecta_tempo_downmix_multicanal(monkeypatch):
+    # 3 canais: downmix so tratava channels==2; >2ch entrava interleaved no beat_track
+    # (tempo errado porque o array fica 3x mais longo, com canais misturados em sequencia).
+    import librosa
+    import numpy as np
+
+    n_frames = 4410
+    samples = np.tile(np.array([100, 200, 300], dtype=np.int16), n_frames)
+    bed = AudioSegment(data=samples.tobytes(), sample_width=2, frame_rate=44100, channels=3)
+
+    capturado = {}
+
+    def fake_beat_track(y, sr):
+        capturado["len"] = len(y)
+        return 120.0, None
+
+    monkeypatch.setattr(librosa.beat, "beat_track", fake_beat_track)
+    detecta_tempo(bed)
+    assert capturado["len"] == n_frames
+
+
+# ---- contrato best-effort: falha na deteccao nao propaga ----
+
+@pytest.mark.skipif(not _tem_librosa(), reason="librosa ausente")
+def test_detecta_tempo_excecao_no_beat_track_retorna_none(monkeypatch):
+    import librosa
+    from pydub.generators import Sine
+
+    def boom(y, sr):
+        raise ValueError("beat_track explodiu")
+
+    monkeypatch.setattr(librosa.beat, "beat_track", boom)
+    bed = Sine(880).to_audio_segment(duration=50)
+    assert detecta_tempo(bed) is None
+
+
+@pytest.mark.skipif(not _tem_librosa(), reason="librosa ausente")
+def test_warp_bed_degrada_pro_original_se_deteccao_falhar(monkeypatch):
+    import librosa
+    from pydub.generators import Sine
+
+    def boom(y, sr):
+        raise ValueError("beat_track explodiu")
+
+    monkeypatch.setattr(librosa.beat, "beat_track", boom)
+    bed = Sine(880).to_audio_segment(duration=50)
+    out = warp_bed(bed, bpm_grade=120.0)
+    assert out is bed

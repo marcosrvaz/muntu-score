@@ -6,6 +6,10 @@ contextual por corte (SFX gerado) e a camada de sound design (ver nota de pesqui
 
 manifest.json (em assets/stems/<pack>/): {"stems": [{arquivo, clima, papel}, ...]}
 papel = hit | pad | perc | riser
+
+LEGADO (hits nos cortes OFF, decisao 2026-07: estetica trailer): sem consumidor no
+pipeline; mantido pra eventual modo "hits" futuro. Testes cobrem o contrato pra
+reativacao. Nao expandir sem reativar.
 """
 from __future__ import annotations
 

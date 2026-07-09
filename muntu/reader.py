@@ -99,10 +99,13 @@ def timeline_disponivel() -> bool:
 
 
 def _chama(b64: str) -> dict:
+    import sys
+    import time
+
     import httpx
 
-    r = httpx.post(
-        mood.MOOD_URL,
+    kwargs = dict(
+        url=mood.MOOD_URL,
         headers={"Authorization": f"Bearer {os.environ['MUNTU_MOOD_API_KEY']}"},
         json={
             "model": mood.MODEL,
@@ -114,8 +117,18 @@ def _chama(b64: str) -> dict:
         },
         timeout=180.0,
     )
+    r = httpx.post(**kwargs)
+    if r.status_code == 429 or r.status_code >= 500:
+        print(f"[muntu] reader status={r.status_code}, 1 retry em 2s", file=sys.stderr)
+        time.sleep(2)
+        r = httpx.post(**kwargs)
     r.raise_for_status()
-    return mood._parse_json(r.json()["choices"][0]["message"]["content"])
+    choice = r.json()["choices"][0]
+    finish = choice.get("finish_reason")
+    if finish and finish != "stop":
+        print(f"[muntu] reader finish_reason={finish} (resposta possivelmente truncada; "
+              "calibrar MAX_TOKENS)", file=sys.stderr)
+    return mood._parse_json(choice["message"]["content"])
 
 
 def _cobre(partes: list[dict], cenas: list[dict], duracao: float) -> list[dict]:
@@ -128,6 +141,8 @@ def _cobre(partes: list[dict], cenas: list[dict], duracao: float) -> list[dict]:
     partes[0]["start"] = 0.0
     for i in range(1, len(partes)):
         partes[i]["start"] = partes[i - 1]["end"]      # cola no fim da anterior
+        if partes[i]["end"] < partes[i]["start"]:       # parte engolida por sobreposicao ->
+            partes[i]["end"] = partes[i]["start"]       # vira 0s (_merge_curtas absorve depois)
     partes[-1]["end"] = round(duracao, 3)
     return partes
 
@@ -135,6 +150,11 @@ def _cobre(partes: list[dict], cenas: list[dict], duracao: float) -> list[dict]:
 def _t_de_cena(num, cenas: list[dict]):
     """Tempo (s) de inicio da cena 1-based; None se fora do range."""
     return round(cenas[num - 1]["start"], 3) if isinstance(num, int) and 1 <= num <= len(cenas) else None
+
+
+def _e_num(x) -> bool:
+    """int/float que NAO seja bool (bool e subclasse de int -> True passaria como cena 1)."""
+    return isinstance(x, (int, float)) and not isinstance(x, bool)
 
 
 def _merge_curtas(partes: list[dict], min_s: float = MIN_PARTE_S) -> list[dict]:
@@ -162,7 +182,7 @@ def _beats(itens, campo: str, cenas: list[dict]) -> list[dict]:
     out = []
     for p in itens or []:
         c = p.get("cena") if isinstance(p, dict) else None
-        t = _t_de_cena(int(c), cenas) if isinstance(c, (int, float)) else None
+        t = _t_de_cena(int(c), cenas) if _e_num(c) else None
         valor = (p.get(campo) or "").strip() if isinstance(p, dict) else ""
         if t is not None and valor:
             out.append({"cena": int(c), "t": t, campo: valor,
@@ -198,8 +218,8 @@ def _normaliza(data: dict, cenas: list[dict], duracao: float) -> dict:
             "papel": (p.get("papel") or "").strip(),
         })
     climax, stop = data.get("climax"), data.get("stop")
-    climax = int(climax) if isinstance(climax, (int, float)) else None
-    stop = int(stop) if isinstance(stop, (int, float)) else None
+    climax = int(climax) if _e_num(climax) else None
+    stop = int(stop) if _e_num(stop) else None
     # PONTUACOES: beats de SFX que o reader marcou (agulha de vinil, uivo comico...) —
     # cena -> tempo; sem sfx ou cena fora do range = descartada
     pontuacoes = _beats(data.get("pontuacoes"), "sfx", cenas)

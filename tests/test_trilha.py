@@ -442,7 +442,9 @@ def test_diegetico_gera_mais_longo_e_corta_no_span(monkeypatch):
         "stop_t": None}
     out = monta_trilha(tl, 12.0)
     assert pedidos[0] == (6000 + trilha.DIEGETICO_PAD_MS) / 1000.0   # diegetico pediu com pad
-    assert pedidos[1] == 6.0                                         # score pediu exato
+    # score SEM plano tambem pede com folga (SILENCIO_TETO_MS): senao o corte de silencio
+    # inicial pode deixar a parte curta e o FIM dela toca em silencio (buraco no rabo)
+    assert pedidos[1] == (6000 + trilha.SILENCIO_TETO_MS) / 1000.0
     assert abs(len(out) - 12000) < 50                                # trilha dura o filme
 
 
@@ -463,6 +465,30 @@ def test_stop_na_fronteira_fecha_diegetico_com_gag(monkeypatch):
     out = monta_trilha(tl, 12.0)
     assert abs(len(out) - 12000) < 50
     assert out[5100:6100].max_dBFS == float("-inf") or out[5100:6100].max_dBFS < -40  # respiro pos-beat
+    assert out[7000:11000].max_dBFS != float("-inf")  # score entra depois do respiro
+
+
+def test_stop_fronteira_tolera_float_nao_identico(monkeypatch):
+    # stop_t vem de fonte diferente do end da parte (round-trip JSON/float) -> igualdade EXATA
+    # falha (5.0000001 != 5.0): o gag de fronteira nao disparava e caia no _aplica_stop generico
+    # (corte limpo, sem wind-down). Tolerancia resolve. Silencio sozinho nao distingue os dois
+    # caminhos (ambos calam a mesma janela) -> espiona _stop_diegetico pra confirmar o ROTEAMENTO.
+    monkeypatch.setattr(trilha.musica, "gera_musica", _fake_bed)
+    chamado = {"n": 0}
+    orig = trilha._stop_diegetico
+
+    def _espiao(*a, **k):
+        chamado["n"] += 1
+        return orig(*a, **k)
+    monkeypatch.setattr(trilha, "_stop_diegetico", _espiao)
+    tl = {"comico": True, "partes": [
+        {"cena_ini": 1, "cena_fim": 3, "start": 0.0, "end": 5.0, "tipo": "diegetic", "clima": "energetic", "mood": "party"},
+        {"cena_ini": 4, "cena_fim": 6, "start": 5.0, "end": 12.0, "tipo": "score", "clima": "romantic", "mood": "ballad"}],
+        "stop_t": 5.0 + 1e-7}
+    out = monta_trilha(tl, 12.0)
+    assert chamado["n"] == 1                       # roteou como fronteira (gag), nao _aplica_stop generico
+    assert abs(len(out) - 12000) < 50
+    assert out[5100:6100].max_dBFS == float("-inf") or out[5100:6100].max_dBFS < -40  # respiro pos-beat (gag)
     assert out[7000:11000].max_dBFS != float("-inf")  # score entra depois do respiro
 
 
@@ -549,6 +575,89 @@ def test_plano_por_parte_usa_provider_pinado_nao_o_global(monkeypatch):
          "provider": "elevenlabs"}], "stop_t": None}
     monta_trilha(tl, 16.0)
     assert chamadas   # _plano_da_parte foi chamado (hoje, com o bug, nao seria)
+
+
+def test_stop_roteamento_sem_tipo_nao_derruba_p_stop(monkeypatch):
+    # PIN editado a mao: parte sem campo "tipo" que CONTEM o stop_t -> roteamento do stop
+    # acessava p_stop["tipo"] direto (KeyError). Resto do modulo ja usa .get.
+    monkeypatch.setattr(trilha.musica, "gera_musica", _fake_bed)
+    tl = {"partes": [{"cena_ini": 1, "cena_fim": 2, "start": 0.0, "end": 10.0, "mood": "x"}],
+          "stop_t": 4.0}
+    out = monta_trilha(tl, 10.0)                  # nao pode levantar KeyError
+    assert abs(len(out) - 10000) < 50
+
+
+def test_stop_roteamento_sem_tipo_nao_derruba_p_fecha(monkeypatch):
+    # PIN sem "tipo": parte cujo FIM bate o stop_t (candidata a p_fecha) -> o generator
+    # acessava p["tipo"] direto antes do .get existir (KeyError).
+    monkeypatch.setattr(trilha.musica, "gera_musica", _fake_bed)
+    tl = {"partes": [{"cena_ini": 1, "cena_fim": 2, "start": 0.0, "end": 4.0, "mood": "x"}],
+          "stop_t": 4.0}
+    out = monta_trilha(tl, 10.0)                  # nao pode levantar KeyError
+    assert abs(len(out) - 10000) < 50
+
+
+def test_overlay_citacoes_gain_invalido_usa_default(tmp_path, monkeypatch):
+    # PIN com gain_db mal formado (unidade colada, "-3dB") derrubava a trilha inteira
+    # (_overlay_citacoes roda FORA do try best-effort do loop de partes; pydub faz float(gain)
+    # e levanta ValueError). Tipo invalido -> usa MARCHA_GAIN_DB, sem levantar.
+    from muntu import tons
+    Sine(440).to_audio_segment(duration=500).export(str(tmp_path / "marcha_nupcial.mp3"),
+                                                    format="mp3")
+    monkeypatch.setattr(trilha, "ASSETS_DIR", str(tmp_path))
+    monkeypatch.setattr(tons, "detecta_tom", lambda seg: None)
+    bed = AudioSegment.silent(duration=2000)
+    parte = {"start": 10.0, "end": 12.0, "tipo": "score"}
+    out = _overlay_citacoes(bed, [{"t": 11.0, "melodia": "wedding march", "gain_db": "-3dB"}], parte)
+    assert out.dBFS > bed.dBFS                    # citacao colou (default aplicado, nao levantou)
+    # bool passa isinstance(int) em Python: sem o guard explicito viraria gain de 1dB (True==1),
+    # nao o default -3dB — silenciosamente errado, nao so um crash.
+    out2 = _overlay_citacoes(AudioSegment.silent(duration=2000),
+                             [{"t": 11.0, "melodia": "wedding march", "gain_db": True}], parte)
+    esperado = _overlay_citacoes(AudioSegment.silent(duration=2000),
+                                 [{"t": 11.0, "melodia": "wedding march"}], parte)
+    assert abs(out2.dBFS - esperado.dBFS) < 0.01
+
+
+def test_overlay_citacoes_fora_da_parte_nao_detecta_tom(monkeypatch):
+    # detecta_tom (caro) so deve rodar se existir citacao aplicavel (dentro da parte + asset
+    # existente). Citacao fora da parte -> tons.detecta_tom NAO chamado.
+    from muntu import tons
+    chamado = {"n": 0}
+
+    def _spy(seg):
+        chamado["n"] += 1
+        return None
+    monkeypatch.setattr(tons, "detecta_tom", _spy)
+    bed = AudioSegment.silent(duration=2000)
+    parte = {"start": 10.0, "end": 12.0, "tipo": "score"}
+    out = _overlay_citacoes(bed, [{"t": 99.0, "melodia": "wedding"}], parte)
+    assert chamado["n"] == 0
+    assert out is bed
+
+
+def test_e_retro_token_exato_nao_substring_fragil():
+    # bug: match por SUBSTRING pega falso-positivo ("now" e substring de "renowned"). Fix:
+    # comparacao por token exato. Casos legitimos (ja testados) continuam intactos.
+    assert trilha._e_retro("now") is False           # token moderno legitimo -> nao-retro
+    assert trilha._e_retro("unknown") is False        # era desconhecida -> nao forca (sentinel)
+    assert trilha._e_retro("1980s") is True           # retro real, comportamento inalterado
+    assert trilha._e_retro("renowned styling") is True   # falso-positivo do mecanismo antigo
+
+
+def test_score_sem_plano_nao_deixa_buraco_de_silencio_no_fim(monkeypatch):
+    # score SEM composition_plan gera exatamente dur_ms; _corta_silencio_inicial pode comer
+    # ate SILENCIO_TETO_MS do INICIO do bed gerado -> bed fica < dur_ms -> rabo da parte em
+    # silencio (buraco no FIM). Fix: gerar com folga extra (como o diegetico ja faz com
+    # DIEGETICO_PAD_MS) e cortar em dur_ms DEPOIS do corte de silencio.
+    def _bed_com_silencio_inicial(prompt, dur, **k):
+        ms = int(dur * 1000)
+        return AudioSegment.silent(duration=1500) + Sine(440).to_audio_segment(duration=ms - 1500)
+    monkeypatch.setattr(trilha.musica, "gera_musica", _bed_com_silencio_inicial)
+    tl = {"partes": [{"cena_ini": 1, "cena_fim": 1, "start": 0.0, "end": 6.0,
+                      "tipo": "score", "mood": "x"}], "stop_t": None}
+    out = monta_trilha(tl, 6.0)
+    assert out[-500:].max_dBFS != float("-inf")   # fim da parte tem audio, nao rabo mudo
 
 
 def test_bed_offset_pula_intro_da_musica_pronta(monkeypatch, tmp_path):

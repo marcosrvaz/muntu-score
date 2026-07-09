@@ -164,3 +164,86 @@ def test_popula_beds_indisponivel_noop(monkeypatch):
     tl = {"partes": [{"tipo": "score", "clima": "epic"}]}
     out = epidemic.popula_beds(tl)
     assert "bed_file" not in out["partes"][0]         # sem key -> timeline intacta (cai em A)
+
+
+def test_baixa_faixa_segue_redirects(monkeypatch, tmp_path):
+    # httpx NAO segue redirect por default (diferente de requests); CDN costuma dar 302
+    monkeypatch.setattr(epidemic, "epidemic_disponivel", lambda: True)
+    monkeypatch.setattr(epidemic, "_url_download", lambda tid, q=None: "http://cdn/x.mp3")
+    import httpx
+
+    captured = {}
+
+    class FakeResp:
+        def raise_for_status(self):
+            pass
+
+        def iter_bytes(self):
+            yield b"ID3fake"
+
+    class FakeStream:
+        def __init__(self, method, url, **kw):
+            captured.update(kw)
+
+        def __enter__(self):
+            return FakeResp()
+
+        def __exit__(self, *a):
+            return False
+
+    monkeypatch.setattr(httpx, "stream", FakeStream)
+    out = epidemic.baixa_faixa("tid", cache_dir=str(tmp_path))
+    assert out is not None
+    assert captured.get("follow_redirects") is True
+
+
+def test_baixa_faixa_escrita_atomica(monkeypatch, tmp_path):
+    # processo concorrente nao pode ver o destino final truncado durante a escrita; falha
+    # no meio do stream -> destino final NAO existe (nem truncado), .part removido
+    monkeypatch.setattr(epidemic, "epidemic_disponivel", lambda: True)
+    monkeypatch.setattr(epidemic, "_url_download", lambda tid, q=None: "http://cdn/x.mp3")
+    import hashlib
+    import httpx
+
+    h = hashlib.sha1("tid|normal".encode()).hexdigest()[:16]
+    destino = tmp_path / f"{h}.mp3"
+    visto_durante_escrita = {}
+
+    class FakeResp:
+        def raise_for_status(self):
+            pass
+
+        def iter_bytes(self):
+            yield b"parte1"
+            visto_durante_escrita["existe"] = destino.exists()  # o que um leitor concorrente veria
+            raise RuntimeError("conexao caiu")
+
+    class FakeStream:
+        def __init__(self, method, url, **kw):
+            pass
+
+        def __enter__(self):
+            return FakeResp()
+
+        def __exit__(self, *a):
+            return False
+
+    monkeypatch.setattr(httpx, "stream", FakeStream)
+    out = epidemic.baixa_faixa("tid", cache_dir=str(tmp_path))
+    assert out is None
+    assert visto_durante_escrita["existe"] is False   # destino final nunca visivel truncado
+    assert not destino.exists()
+    assert not (tmp_path / f"{h}.mp3.part").exists()
+
+
+def test_genero_compostos_por_espaco_ou_hifen():
+    # bug: "synth-pop" (hifen) nao e chave direta e caia em electronic via split; "hard rock"
+    # (espaco) virava rock antes de alcancar a chave composta "hard-rock"
+    assert epidemic._genero("synth-pop") == "synth-pop"
+    assert epidemic._genero("synth pop") == "synth-pop"
+    assert epidemic._genero("hard rock") == "hard-rock"
+    assert epidemic._genero("hard-rock") == "hard-rock"
+    # casos existentes intactos
+    assert epidemic._genero("surf rock") == "surf-rock"
+    assert epidemic._genero("80s cheesy sax") == "smooth-jazz"
+    assert epidemic._genero("indie-pop band") == "indie-pop"

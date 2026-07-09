@@ -1,5 +1,5 @@
 from muntu.reader import (
-    _normaliza, _cobre, _merge_curtas, timeline_disponivel,
+    _normaliza, _cobre, _merge_curtas, _chama, timeline_disponivel,
     salva_timeline, carrega_timeline, timeline_scratch_path,
 )
 
@@ -164,3 +164,94 @@ def test_normaliza_stop_fim_t_e_o_corte_da_cena():
     assert t["stop_t"] == 2.0 and t["stop_fim_t"] == 5.0   # cena 2 = [2.0, 5.0)
     t2 = _normaliza({"partes": [], "stop": None}, CENAS, 12.0)
     assert t2["stop_fim_t"] is None
+
+
+class _FakeResp:
+    def __init__(self, status_code, payload=None):
+        self.status_code = status_code
+        self._payload = payload
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            import httpx
+            req = httpx.Request("POST", "http://x")
+            raise httpx.HTTPStatusError("erro", request=req,
+                                        response=httpx.Response(self.status_code, request=req))
+
+    def json(self):
+        return self._payload
+
+
+def _payload(content, finish_reason="stop"):
+    return {"choices": [{"message": {"content": content}, "finish_reason": finish_reason}]}
+
+
+def test_chama_retry_em_503_depois_200(monkeypatch):
+    # 503 (transiente) na 1a chamada -> 1 retry -> 200 com JSON valido
+    import httpx
+    monkeypatch.setenv("MUNTU_MOOD_API_KEY", "x")
+    monkeypatch.setattr("time.sleep", lambda s: None)     # nao esperar 2s de verdade no teste
+    calls = {"n": 0}
+
+    def fake_post(**kwargs):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return _FakeResp(503)
+        return _FakeResp(200, _payload('{"narrativa": "ok"}'))
+
+    monkeypatch.setattr(httpx, "post", fake_post)
+    r = _chama("b64fake")
+    assert r == {"narrativa": "ok"}
+    assert calls["n"] == 2
+
+
+def test_chama_401_sem_retry(monkeypatch):
+    import httpx
+    monkeypatch.setenv("MUNTU_MOOD_API_KEY", "x")
+    calls = {"n": 0}
+
+    def fake_post(**kwargs):
+        calls["n"] += 1
+        return _FakeResp(401)
+
+    monkeypatch.setattr(httpx, "post", fake_post)
+    try:
+        _chama("b64fake")
+        assert False, "devia levantar HTTPStatusError"
+    except httpx.HTTPStatusError:
+        pass
+    assert calls["n"] == 1
+
+
+def test_chama_finish_reason_length_avisa_e_segue(monkeypatch, capsys):
+    import httpx
+    monkeypatch.setenv("MUNTU_MOOD_API_KEY", "x")
+
+    def fake_post(**kwargs):
+        return _FakeResp(200, _payload('{"narrativa": "truncado"}', finish_reason="length"))
+
+    monkeypatch.setattr(httpx, "post", fake_post)
+    r = _chama("b64fake")
+    assert r == {"narrativa": "truncado"}
+    assert "finish_reason=length" in capsys.readouterr().err
+
+
+def test_normaliza_climax_stop_bool_nao_vira_cena():
+    t = _normaliza({"climax": True, "stop": False, "partes": []}, CENAS, 12.0)
+    assert t["climax_cena"] is None and t["stop_cena"] is None
+
+
+def test_beats_cena_bool_e_descartado():
+    data = {"partes": [], "pontuacoes": [{"cena": True, "sfx": "x"}]}
+    t = _normaliza(data, CENAS, 12.0)
+    assert t["pontuacoes"] == []
+
+
+def test_cobre_partes_sobrepostas_nao_gera_duracao_negativa():
+    # B sobrepoe A (comeca antes de A terminar) e NAO e a ultima parte -> o clamp final
+    # (partes[-1]["end"] = duracao) nao mascara a corrupcao intermediaria
+    partes = [{"cena_ini": 1, "cena_fim": 2, "start": 0.0, "end": 10.0, "tipo": "score", "mood": "", "papel": ""},
+              {"cena_ini": 2, "cena_fim": 3, "start": 5.0, "end": 8.0, "tipo": "score", "mood": "", "papel": ""},
+              {"cena_ini": 3, "cena_fim": 4, "start": 8.0, "end": 12.0, "tipo": "score", "mood": "", "papel": ""}]
+    out = _cobre(partes, CENAS, 12.0)
+    assert all(p["end"] >= p["start"] for p in out)

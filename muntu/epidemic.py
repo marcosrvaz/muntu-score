@@ -166,13 +166,27 @@ def _term(mood: str | None) -> str | None:
 
 def _genero(register: str | None) -> str | None:
     """Extrai a keyword de genero do registro free-text -> genre id (top-level OU subgenero slug)
-    do Epidemic. 1a palavra que casa vence. Testa o token inteiro (casa 'hip-hop','indie-pop')
-    e depois as partes do hifen ('indie-pop'->'pop'). None se nenhuma. Best-effort."""
+    do Epidemic. Testa BIGRAMAS primeiro (palavras adjacentes normalizadas com/sem hifen: "hard
+    rock"/"hard-rock" -> chave "hard-rock"; "synth pop"/"synth-pop" -> chave "synthpop"), senao
+    a tokenizacao por palavra pega a 1a metade do composto ("hard rock" -> "rock" isolado) antes
+    de alcancar a chave composta. Depois cai pro token inteiro (casa 'hip-hop','indie-pop') e as
+    partes do hifen ('indie-pop'->'pop'). 1a que casa vence. None se nenhuma. Best-effort."""
     if not register:
         return None
-    for w in register.strip().lower().replace(",", " ").replace("/", " ").split():
+    palavras = register.strip().lower().replace(",", " ").replace("/", " ").split()
+    for i in range(len(palavras) - 1):
+        com_hifen = f"{palavras[i]}-{palavras[i + 1]}"
+        junto = f"{palavras[i]}{palavras[i + 1]}"
+        if com_hifen in GENERO_EPIDEMIC:
+            return GENERO_EPIDEMIC[com_hifen]
+        if junto in GENERO_EPIDEMIC:
+            return GENERO_EPIDEMIC[junto]
+    for w in palavras:
         if w in GENERO_EPIDEMIC:
             return GENERO_EPIDEMIC[w]
+        junto = w.replace("-", "")                        # 'synth-pop' -> 'synthpop' (chave real)
+        if junto in GENERO_EPIDEMIC:
+            return GENERO_EPIDEMIC[junto]
         for parte in w.split("-"):                       # 'indie-pop' -> 'pop'; 'hip-hop' ja casou acima
             if parte in GENERO_EPIDEMIC:
                 return GENERO_EPIDEMIC[parte]
@@ -279,20 +293,24 @@ def baixa_faixa(track_id: str, cache_dir: str = CACHE_DIR,
     destino = os.path.join(cache_dir, f"{h}.mp3")
     if os.path.exists(destino):
         return destino
+    parcial = destino + ".part"
     try:
         url = _url_download(track_id, qualidade)
         if not url:
             return None
-        with httpx.stream("GET", url, timeout=TIMEOUT) as resp:
+        # follow_redirects: httpx NAO segue redirect por default (diferente de requests);
+        # CDN de download costuma responder com 302
+        with httpx.stream("GET", url, timeout=TIMEOUT, follow_redirects=True) as resp:
             resp.raise_for_status()
-            with open(destino, "wb") as f:
+            with open(parcial, "wb") as f:
                 for chunk in resp.iter_bytes():
                     f.write(chunk)
+        os.replace(parcial, destino)                # atomico: concorrente nunca ve truncado
         return destino
     except Exception as e:                          # noqa: BLE001 — best-effort
         import sys
-        if os.path.exists(destino):
-            os.remove(destino)                      # nao deixa mp3 truncado no cache
+        if os.path.exists(parcial):
+            os.remove(parcial)                      # nao deixa .part truncado no cache
         print(f"[muntu] epidemic download falhou ({type(e).__name__}: {e})", file=sys.stderr)
         return None
 

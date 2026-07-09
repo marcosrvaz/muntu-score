@@ -151,7 +151,6 @@ def run(video_path: str, out_path: str = "outputs/scored.mp4", pack: str = "auto
     # secoes (arco emocional intro->build->climax->outro). Sem warp/lock mecanico ao corte.
     # Falha (free tier 402, timeout) degrada pro sound design so — nunca derruba o binario.
     mix = base
-    prov = musica._prov(None)
     if com_musica and musica.musica_disponivel():
         try:
             if timeline.get("partes"):
@@ -161,6 +160,7 @@ def run(video_path: str, out_path: str = "outputs/scored.mp4", pack: str = "auto
             else:
                 # fallback sem reader: musica unica no arco emocional (composition_plan).
                 # plano_de_score so aqui (era computado sempre = trabalho morto no path por-parte)
+                prov = musica._prov(None)
                 plan = composition_plan(brief, pack_cfg) if prov == "elevenlabs" else None
                 bed_prompt = plano_de_score(brief, pack_cfg)["bed_prompt"]
                 bed = musica.gera_musica(bed_prompt, duracao, composition_plan=plan)

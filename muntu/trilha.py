@@ -46,8 +46,15 @@ MODERNO = ("modern", "contemporary", "present", "current", "today", "now", "atua
 
 def _e_retro(era: str) -> bool:
     """True se a era e periodo PASSADO (retro) -> trilha obrigatoriamente da epoca. 'modern
-    day' etc -> False -> trilha livre (um filme moderno PODE ter trilha retro por escolha)."""
-    return bool(era) and not any(m in era.lower() for m in MODERNO)
+    day' etc -> False -> trilha livre (um filme moderno PODE ter trilha retro por escolha).
+    Match por TOKEN exato (nao substring: "now" e substring acidental de "unknown"/"renowned"
+    e nao pode contar como o token moderno "now"). "unknown" e sentinela explicito: era nao
+    lida -> nao forca (nao da pra forcar uma epoca que a leitura nao identificou)."""
+    era_l = (era or "").strip().lower()
+    if not era_l or era_l == "unknown":
+        return False
+    tokens = set(era_l.split())
+    return not (tokens & set(MODERNO))
 
 
 def _pack_da_parte(parte: dict, packs_dir: str = "packs"):
@@ -372,7 +379,9 @@ def _overlay_citacoes(bed: AudioSegment, citacoes: list[dict] | None,
     sem asset, asset corrompido, ou tom incerto -> bed inalterado. Citacao fora da parte: ignora."""
     if not citacoes:
         return bed
-    tom = tons.detecta_tom(bed)                       # tom da cama desta parte (1x)
+    # filtra ANTES de detectar o tom (caro, roda librosa): so vale a pena se sobrar citacao
+    # dentro da parte E com asset existente — senao detecta_tom rodaria a toa em toda parte.
+    aplicaveis = []
     for c in citacoes:
         t = c.get("t")
         if not (isinstance(t, (int, float)) and parte["start"] <= t < parte["end"]):
@@ -380,12 +389,21 @@ def _overlay_citacoes(bed: AudioSegment, citacoes: list[dict] | None,
         asset = _asset_citacao(c.get("melodia"), ASSETS_DIR)
         if not asset:
             continue
+        aplicaveis.append((t, asset, c))
+    if not aplicaveis:
+        return bed
+    tom = tons.detecta_tom(bed)                       # tom da cama desta parte (1x)
+    for t, asset, c in aplicaveis:
         try:
             seg = AudioSegment.from_file(asset)
         except Exception:                             # noqa: BLE001 — asset corrompido -> skip
             continue
         seg = tons.alinha_tom(seg, tom)
         gain = c.get("gain_db", MARCHA_GAIN_DB)
+        # PIN pode vir com tipo invalido (string mal formada, bool etc) — nao pode derrubar a
+        # trilha inteira (roda FORA do try best-effort do loop de partes)
+        if not isinstance(gain, (int, float)) or isinstance(gain, bool):
+            gain = MARCHA_GAIN_DB
         bed = bed.overlay(seg + gain, position=int((t - parte["start"]) * 1000))
     return bed
 
@@ -438,6 +456,10 @@ def monta_trilha(timeline: dict, duracao: float, packs_dir: str = "packs",
         gera_ms = max(MIN_BED_MS, dur_ms)
         if parte.get("tipo") == "diegetic":     # corta no MEIO da faixa (energia cheia)
             gera_ms += DIEGETICO_PAD_MS
+        elif plan is None:                      # score sem plano: gera dur_ms EXATO -> o corte
+            gera_ms += SILENCIO_TETO_MS         # de silencio inicial (ate SILENCIO_TETO_MS)
+            #                                     deixava a parte curta (buraco no FIM); mesmo
+            #                                     truque do pad diegetico, cortado DEPOIS abaixo
         try:
             bed_file = parte.get("bed_file")    # PIN de camada 2: audio TRAVADO — aceita
             #                                     QUALQUER audio (mp3 pronto/biblioteca incluso)
@@ -486,8 +508,8 @@ def monta_trilha(timeline: dict, duracao: float, packs_dir: str = "packs",
     if stop_t is not None:
         ms = int(stop_t * 1000)
         p_stop = next((p for p in partes if p["start"] <= stop_t < p["end"]), None)
-        p_fecha = next((p for p in partes if p["end"] == stop_t and p["tipo"] == "diegetic"), None)
-        if p_stop and p_stop["tipo"] == "diegetic":
+        p_fecha = next((p for p in partes if p["end"] == stop_t and p.get("tipo") == "diegetic"), None)
+        if p_stop and p_stop.get("tipo") == "diegetic":
             if filme_comico:
                 # o wind-down (vitrola desligando) ocupa do beat ATE O CORTE da cena
                 # (stop_fim_t do reader) — pitch desce a cena inteira, nao 0.8s fixo

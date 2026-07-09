@@ -25,6 +25,14 @@ def test_semitonos_invalido():
     assert tons.semitonos("xx yy", "C major") == 0        # parse falha -> 0
 
 
+def test_semitonos_bemol_equivale_ao_sustenido_enarmonico():
+    # "Db major" tem que transpor igual "C# major" (mesma nota, grafia diferente)
+    assert tons.semitonos("Db major", "C major") == tons.semitonos("C# major", "C major")
+    assert tons.semitonos("C major", "Eb major") == tons.semitonos("C major", "D# major")
+    assert tons.semitonos("Gb major", "Ab major") == tons.semitonos("F# major", "G# major")
+    assert tons.semitonos("Bb major", "C major") == tons.semitonos("A# major", "C major")
+
+
 def test_detecta_tom_acorde_conhecido():
     # acorde maior claro: C-E-G (C major)
     seg = _acorde(261.63, 329.63, 392.00)

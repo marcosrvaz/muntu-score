@@ -101,6 +101,8 @@ def classifica_modo(confianca: float, limiar: float = 0.6) -> str:
     return "ritmico" if confianca >= limiar else "livre"
 
 
+# --- LEGADO (hits nos cortes OFF, decisao 2026-07: estetica trailer) --- sem consumidor no
+# pipeline; mantido pra eventual modo "hits" futuro. Nao expandir sem reativar.
 def monta_grade(fase: float, bpm: float, duracao: float) -> dict:
     """Linhas de batida cobrindo a duracao. Downbeats a cada 4 batidas carregam peso."""
     P = 60.0 / bpm

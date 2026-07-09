@@ -22,6 +22,7 @@ from pydub import AudioSegment
 _PERFIL_MAJOR = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88]
 _PERFIL_MINOR = [6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17]
 _NOTAS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+_BEMOIS = {"DB": "C#", "EB": "D#", "GB": "F#", "AB": "G#", "BB": "A#"}   # bemol -> sustenido enarmonico
 
 _LIMIAR_CORR = 0.40     # abaixo disso o tom e incerto -> None (nao arrisca transpor)
 
@@ -77,7 +78,9 @@ def semitonos(de: "str | None", para: "str | None") -> int:
 
     def _tonica(k: str) -> int | None:
         try:
-            return _NOTAS.index(k.strip().split()[0])
+            nota = k.strip().split()[0]
+            nota = _BEMOIS.get(nota.upper(), nota)
+            return _NOTAS.index(nota)
         except (ValueError, IndexError):
             return None
 

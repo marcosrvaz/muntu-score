@@ -6,9 +6,10 @@ pesquisa sound-design-ia-2026-06):
 - **mood** guia a TRILHA (musica/musica — musica).
 - **cena real** guia o FOLEY (o som fisico que casa com a acao na tela — aqui).
 
-Motor = MMAudio v2 (Replicate, `zsxkib/mmaudio-t4`): ve os frames do corte e gera audio
-sincronizado ao movimento. `negative_prompt="music"` -> foley NAO gera musica (a musica e
-outra camada). E o unico video->foley com API (ElevenLabs video-to-sound e so web).
+Motor = MMAudio v2 (Replicate, `zsxkib/mmaudio`): ve os frames do corte e gera audio
+sincronizado ao movimento. `negative_prompt=NEG_PROMPT` (musica/vocal/fala) -> foley NAO
+gera musica nem voz (outras camadas). E o unico video->foley com API (ElevenLabs
+video-to-sound e so web).
 
 Hierarquia anti-commodity: foley VARIA nos cortes comuns; o stem de ASSINATURA crava o
 climax + o fechamento (brand sting) — o diferencial Muntu e a curadoria, nao o gerador.
@@ -59,8 +60,12 @@ def _janela(corte: float, duracao: float,
 
 
 def _energia_da_cena(t: float, cenas) -> float:
-    for c in (cenas or []):
-        if c.get("start", 0) <= t < c.get("end", 0):
+    cenas = cenas or []
+    ultimo = len(cenas) - 1
+    for i, c in enumerate(cenas):
+        fim = c.get("end", 0)
+        dentro = c.get("start", 0) <= t <= fim if i == ultimo else c.get("start", 0) <= t < fim
+        if dentro:
             e = c.get("energia", 3)
             return float(e) if isinstance(e, (int, float)) else 3.0
     return 3.0
@@ -89,9 +94,10 @@ def seleciona_assinatura(acentos: list, cenas=None) -> set:
 def _cache_key(video_path: str, corte: float, prompt: str = "") -> str:
     try:
         mt = int(os.path.getmtime(video_path))
+        sz = os.path.getsize(video_path)
     except OSError:
-        mt = 0
-    return f"{os.path.basename(video_path)}|{mt}|{round(corte, 3)}|{prompt}"
+        mt, sz = 0, 0
+    return f"{os.path.basename(video_path)}|{mt}|{sz}|{round(corte, 3)}|{prompt}"
 
 
 def _cache_path(chave: str, cache_dir: str) -> str:

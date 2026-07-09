@@ -1,3 +1,9 @@
+"""Assinatura sonora: renderiza stems fixos (hit/perc/riser) nos acentos do director.
+
+LEGADO (hits nos cortes OFF, decisao 2026-07: estetica trailer): sem consumidor no
+pipeline; mantido pra eventual modo "hits" futuro. Testes cobrem o contrato pra
+reativacao. Nao expandir sem reativar.
+"""
 import os
 
 from pydub import AudioSegment

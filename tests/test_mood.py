@@ -1,3 +1,4 @@
+import muntu.mood as mood_mod
 from muntu.mood import (
     clima_disponivel, _cenas_de_cortes, aplica_saida, analisa_clima, _parse_json,
 )
@@ -74,6 +75,23 @@ def test_aplica_saida_mood_fora_do_vocab_vira_neutral():
     assert out[0]["clima"] == "neutral"
 
 
+def test_aplica_saida_energias_nao_lista_vira_default(monkeypatch):
+    # VLM as vezes devolve energias como dict/None em vez de lista -> indexacao explode
+    cenas = _cenas_de_cortes([4.0], duracao=8.0)                # 2 cenas
+    out = aplica_saida(cenas, "tense", {"a": 1})
+    assert [c["energia"] for c in out] == [3, 3]
+
+
 def test_analisa_clima_sem_key_devolve_vazio(monkeypatch):
     monkeypatch.delenv("MUNTU_MOOD_API_KEY", raising=False)
     assert analisa_clima("qualquer.mp4", [3.0], 6.0) == []
+
+
+def test_montagem_cache_tem_teto(monkeypatch):
+    # JPEGs da montagem nao podem acumular sem limite em RAM (Gradio de sessao longa)
+    monkeypatch.setattr(mood_mod, "_MONTAGEM_CACHE", {})
+    cap = mood_mod._MONTAGEM_CACHE_MAX
+    for i in range(cap + 1):
+        mood_mod._cache_montagem(("video.mp4", (float(i),), 10.0), f"jpeg-{i}".encode())
+    assert len(mood_mod._MONTAGEM_CACHE) == cap
+    assert ("video.mp4", (0.0,), 10.0) not in mood_mod._MONTAGEM_CACHE  # a mais antiga saiu

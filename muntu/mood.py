@@ -163,6 +163,7 @@ def aplica_saida(cenas: list[dict], mood: str, energias: list,
     """
     m = str(mood or "").strip().lower()
     mood = m if m in MOODS else "neutral"   # normaliza case/espaco do VLM; fora do vocab -> "neutral" (casa com packs)
+    energias = energias if isinstance(energias, list) else []   # VLM as vezes manda dict/None
     for i, cena in enumerate(cenas):
         e = energias[i] if i < len(energias) else 3
         cena["clima"] = mood
@@ -176,6 +177,14 @@ def aplica_saida(cenas: list[dict], mood: str, energias: list,
 
 
 _MONTAGEM_CACHE: dict = {}
+_MONTAGEM_CACHE_MAX = 8    # sessao Gradio longa acumula JPEGs em RAM sem teto; cap simples
+
+
+def _cache_montagem(chave: tuple, montagem: bytes) -> None:
+    """Insere no cache respeitando o teto (FIFO: remove a chave mais antiga ao estourar)."""
+    if len(_MONTAGEM_CACHE) >= _MONTAGEM_CACHE_MAX:
+        del _MONTAGEM_CACHE[next(iter(_MONTAGEM_CACHE))]
+    _MONTAGEM_CACHE[chave] = montagem
 
 
 def montagem_do_filme(video_path: str, cortes: list[float], duracao: float):
@@ -191,7 +200,7 @@ def montagem_do_filme(video_path: str, cortes: list[float], duracao: float):
             return None
         frames.append(fr)
     m = _monta_montagem(frames)
-    _MONTAGEM_CACHE[chave] = m
+    _cache_montagem(chave, m)
     return m
 
 
