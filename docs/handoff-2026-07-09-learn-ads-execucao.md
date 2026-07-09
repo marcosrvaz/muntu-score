@@ -36,14 +36,20 @@ Planos: `docs/plans/2026-07-09-*.md` (master + ws-a/b/c). Issues #1-#3 fechráve
 - Commits: mão do Marcos OU Claude commitando SEM trailer (convenção do repo).
   rtk engole exit code de pytest em cadeia `&&` — rodar pytest SEPARADO antes de commitar.
 
-## EM ANDAMENTO agora
+## LOTE DOS 47: CONCLUÍDO (2026-07-09 fim do dia)
 
-- **Lote dos 47** (gate D10 APROVADO pelo Marcos "corrijo depois"): taguear todos os ads
-  de `corpus/ads/` → `outputs/spike_tags/`. Rodando em background OU via nohup
-  (`outputs/lote47.log`). Se morreu: re-rodar
-  `AUDD_API_TOKEN=<token> PYTHONPATH=. venv/bin/python scripts/spike_tagueador.py corpus/ads/*.mp4`
-  (token AudD: Marcos tem; `.env` é protegido contra escrita de agente).
-- Gabarito do Marcos: `outputs/spike_tags/GABARITO.md` (ground truth parcial + pendências).
+- **47/47 com música, 16 com faixa nomeada (AudD), 37 com VO** — dataset em
+  `outputs/spike_tags/*.json` + `RELATORIO.md` consolidado. Gate D10 APROVADO.
+- Fixes de calibração descobertos no lote (todos commitados): áudio vai como MP3
+  (wav de ad longo estourava payload); montagem grande SUPRIME o ouvido → fallback
+  só-áudio quando partes vêm vazias; score synth atmosférico ≠ ambiência.
+- MP Marte: JSON curado manualmente com output validado do modelo (só-áudio) — a
+  chamada com montagem re-sorteava vazio mesmo com fallback; conferir na retaguagem.
+- Gabarito do Marcos: `outputs/spike_tags/GABARITO.md` (ground truth + pendências).
+- Token AudD: Marcos tem (passar inline; `.env` protegido contra escrita de agente).
+- **Regra de APPLY ditada e NÃO implementada:** `packs/regras_apply.md` — vinyl
+  slow-down em stop diegético SÓ quando gênero fun/comédia, sem needle scratch.
+  Implementar na camada 1.5 (condicionar `_stop_diegetico` + suprimir pontuação).
 
 ## PRÓXIMOS PASSOS (ordem)
 
