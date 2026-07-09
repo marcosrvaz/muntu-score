@@ -115,12 +115,30 @@ PROMPT = (
 )
 
 
+def _bloco_regras(packs_dir: str = "packs") -> str:
+    """Regras do diretor (packs/regras_diretor.md) -> bloco extra do prompt. O CONTEUDO
+    e craft do usuario (mesma filosofia dos packs); o reader decide QUANDO cada regra se
+    aplica. Arquivo ausente/vazio -> "" (best-effort, prompt segue identico)."""
+    try:
+        with open(os.path.join(packs_dir, "regras_diretor.md"), encoding="utf-8") as f:
+            txt = f.read().strip()
+    except OSError:
+        return ""
+    if not txt:
+        return ""
+    return (
+        "\nDIRECTOR'S RULES — the user's own scoring conventions, they complement the "
+        "guidance above. When a rule's context matches what YOU read in the film, FOLLOW "
+        "it (you still decide when it applies):\n" + txt + "\n"
+    )
+
+
 def timeline_disponivel() -> bool:
     """Mesmo gate do VLM de mood (le o filme)."""
     return mood.clima_disponivel()
 
 
-def _chama(b64: str) -> dict:
+def _chama(b64: str, prompt: str | None = None) -> dict:
     import sys
     import time
 
@@ -133,7 +151,7 @@ def _chama(b64: str) -> dict:
             "model": mood.MODEL,
             "max_tokens": MAX_TOKENS,
             "messages": [{"role": "user", "content": [
-                {"type": "text", "text": PROMPT},
+                {"type": "text", "text": prompt or PROMPT},
                 {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}},
             ]}],
         },
@@ -317,7 +335,7 @@ def le_timeline(video_path: str, cortes: list[float], duracao: float) -> dict:
         if m is None:
             return {}
         b64 = base64.standard_b64encode(m).decode("utf-8")
-        tl = _normaliza(_chama(b64), cenas, duracao)
+        tl = _normaliza(_chama(b64, PROMPT + _bloco_regras()), cenas, duracao)
         salva_timeline(tl, timeline_scratch_path(video_path))   # captura pra travar depois
         return tl
     except Exception as e:                     # noqa: BLE001 — best-effort

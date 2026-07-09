@@ -282,3 +282,17 @@ def test_cobre_partes_sobrepostas_nao_gera_duracao_negativa():
               {"cena_ini": 3, "cena_fim": 4, "start": 8.0, "end": 12.0, "tipo": "score", "mood": "", "papel": ""}]
     out = _cobre(partes, CENAS, 12.0)
     assert all(p["end"] >= p["start"] for p in out)
+
+
+def test_bloco_regras_injeta_arquivo(tmp_path):
+    (tmp_path / "regras_diretor.md").write_text("- romance em comedia -> bolero kitsch",
+                                                encoding="utf-8")
+    bloco = reader._bloco_regras(str(tmp_path))
+    assert "DIRECTOR'S RULES" in bloco
+    assert "bolero kitsch" in bloco
+
+
+def test_bloco_regras_ausente_ou_vazio(tmp_path):
+    assert reader._bloco_regras(str(tmp_path / "nao_existe")) == ""
+    (tmp_path / "regras_diretor.md").write_text("  \n", encoding="utf-8")
+    assert reader._bloco_regras(str(tmp_path)) == ""
