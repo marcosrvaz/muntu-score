@@ -28,7 +28,7 @@ Herdadas do plano-mestre (commits só do usuário; reader escolhe/apply executa;
 
 - Produces: `valida_tags(tags: dict, tipo: str = "music") -> dict`, `descritor(tags: dict, tipo: str = "music") -> str`, `normaliza_ironia(valor) -> str`, constantes `IRONIA`, `FUNCAO`, `MODE`, `TAGS_MUSICA`, `TAGS_SFX`, `TAGS_VO`. WS-B e WS-C importam tudo daqui.
 
-- [ ] **Step 1: Escrever testes que falham**
+- [x] **Step 1: Escrever testes que falham**
 
 ```python
 """Tag-schema — vocabulário compartilhado (valida_tags/descritor)."""
@@ -85,17 +85,17 @@ def test_descritor_sfx_e_vo():
     assert "energy 4/5" in tags.descritor({"genero": "female", "energia": 4}, "vo")
 ```
 
-- [ ] **Step 2: Rodar e ver falhar**
+- [x] **Step 2: Rodar e ver falhar**
 
 Run: `pytest tests/test_tags.py -v` — Expected: FAIL `ModuleNotFoundError: muntu.tags`
 
-- [ ] **Step 3: Criar `muntu/tags.py` VERBATIM da seção "Tag-schema v1 CANÔNICO" do plano-mestre**
+- [x] **Step 3: Criar `muntu/tags.py` VERBATIM da seção "Tag-schema v1 CANÔNICO" do plano-mestre**
 
 Copiar o bloco de código inteiro de `docs/plans/2026-07-09-arquitetura-learn-ads-master.md`. Não improvisar campo nem renomear — WS-B/WS-C dependem dos nomes exatos.
 
-- [ ] **Step 4: Rodar testes** — `pytest tests/test_tags.py -v` → PASS; `pytest tests/` → tudo verde.
+- [x] **Step 4: Rodar testes** — `pytest tests/test_tags.py -v` → PASS; `pytest tests/` → tudo verde.
 
-- [ ] **Step 5: PARAR — avisar usuário pra commitar** (este commit destrava WS-B e WS-C).
+- [x] **Step 5: PARAR — avisar usuário pra commitar** (este commit destrava WS-B e WS-C).
 
 ---
 
