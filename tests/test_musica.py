@@ -1,3 +1,6 @@
+import io
+import os
+
 from pydub import AudioSegment
 
 from muntu import musica
@@ -89,3 +92,41 @@ def test_reconcilia_chunks_len_diferente_nao_mexe():
         chunks = []
     cp = {"sections": [{"section_name": "Build", "positive_local_styles": ["x"]}]}
     assert _reconcilia_chunks(Plan(), cp) is not None      # best-effort, sem crash
+
+
+def test_gera_musica_bytes_invalidos_nao_cacheia(monkeypatch, tmp_path):
+    # stream truncado/corpo de erro com 200 nao pode poluir o cache
+    monkeypatch.setattr(musica, "musica_disponivel", lambda p=None: True)
+    monkeypatch.setattr(musica, "_gera_stability", lambda prompt, duracao: b"lixo")
+
+    prompt, dur, prov = "prompt invalido", 8.0, "stability"
+    try:
+        gera_musica(prompt, dur, provider=prov, cache_dir=str(tmp_path))
+        assert False, "deveria ter levantado"
+    except Exception:
+        pass
+
+    chave = f"{prov}|{prompt}|{round(dur, 1)}"
+    cache_file = musica._cache_path(chave, str(tmp_path))
+    assert not os.path.exists(cache_file)
+
+
+def test_gera_musica_cache_corrompido_regenera(monkeypatch, tmp_path):
+    # cache envenenado de uma run anterior nao pode derrubar a run seguinte
+    prompt, dur, prov = "prompt cache ruim", 8.0, "stability"
+    chave = f"{prov}|{prompt}|{round(dur, 1)}"
+    cache_file = musica._cache_path(chave, str(tmp_path))
+    os.makedirs(str(tmp_path), exist_ok=True)
+    with open(cache_file, "wb") as f:
+        f.write(b"lixo")
+
+    buf = io.BytesIO()
+    AudioSegment.silent(duration=int(dur * 1000)).export(buf, format="mp3")
+    valido = buf.getvalue()
+
+    monkeypatch.setattr(musica, "musica_disponivel", lambda p=None: True)
+    monkeypatch.setattr(musica, "_gera_stability", lambda prompt, duracao: valido)
+
+    seg = gera_musica(prompt, dur, provider=prov, cache_dir=str(tmp_path))
+    assert isinstance(seg, AudioSegment)
+    assert len(seg) >= int(dur * 1000) - 100

@@ -21,6 +21,13 @@ SFX_CLIMAX_GAIN = -2       # foley no CLIMAX narrativo — fura a musica
 MAX_DUR = 30.0             # corta video longo demais (peca de comercial curta)
 FADE_IN_MS, FADE_OUT_MS = 150, 400
 HEADROOM_DB = 1.0          # teto ~ -1 dBFS — hits nao estouram
+PRE_MIX_DB = -6.0          # headroom durante a soma; normalize do _finaliza recupera o nivel
+
+
+def _soma_camada(base, seg, gain_db, position=0):
+    """Overlay com headroom: atenua a camada antes da soma pra nao saturar o clamp
+    int do pydub; o normalize em _finaliza devolve o nivel."""
+    return base.overlay(seg + gain_db + PRE_MIX_DB, position=position)
 
 
 def _energia_em(cenas: list, t: float, default: int = 3) -> int:
@@ -114,7 +121,7 @@ def run(video_path: str, out_path: str = "outputs/scored.mp4", pack: str = "auto
     # NOSSO, frame-tight). Ambiencia cobre o span da cena; foley na acao. NAO ha hits de
     # assinatura nos cortes — isso e estetica de trailer, descartada (regra do usuario): a
     # trilha veste o filme, o foley narra. Best-effort. Ver muntu-foley-decidido-text-sfx.
-    base = AudioSegment.silent(duration=int(duracao * 1000))
+    base = AudioSegment.silent(duration=int(duracao * 1000)) + PRE_MIX_DB
     if sfx_map.mapa_disponivel() and sfx_gen.sfx_disponivel():
         cenas = brief.get("cenas") or []
         climax_t = next((c["start"] for c in cenas if c.get("climax")), None)
@@ -124,7 +131,7 @@ def run(video_path: str, out_path: str = "outputs/scored.mp4", pack: str = "auto
             if ev["ambiencia"]:
                 amb = sfx_gen.gera_sfx(ev["ambiencia"], duracao_s=max(1.0, min(ev["dur"], 12.0)))
                 if amb is not None:
-                    base = base.overlay(amb.fade_in(120).fade_out(200) + AMB_GAIN_DB, position=pos)
+                    base = _soma_camada(base, amb.fade_in(120).fade_out(200), AMB_GAIN_DB, position=pos)
             # FOLEY de ACAO: one-shot no tempo da cena; sobe com a energia; CLIMAX fura a musica
             if ev["foley"]:
                 fol = sfx_gen.gera_sfx(ev["foley"], duracao_s=1.2)
@@ -133,7 +140,7 @@ def run(video_path: str, out_path: str = "outputs/scored.mp4", pack: str = "auto
                         gain = SFX_CLIMAX_GAIN
                     else:
                         gain = SFX_GAIN_BASE + (_energia_em(cenas, ev["t"]) - 1) * SFX_GAIN_STEP
-                    base = base.overlay(fol + gain, position=pos)
+                    base = _soma_camada(base, fol, gain, position=pos)
 
     # trilha (musica) = elemento psicologico: veste a NARRATIVA (mood + energia + climax do
     # VLM via composition_plan), nao os cortes. ElevenLabs gera honrando as duracoes das
@@ -153,7 +160,7 @@ def run(video_path: str, out_path: str = "outputs/scored.mp4", pack: str = "auto
                 plan = composition_plan(brief, pack_cfg) if prov == "elevenlabs" else None
                 bed_prompt = plano_de_score(brief, pack_cfg)["bed_prompt"]
                 bed = musica.gera_musica(bed_prompt, duracao, composition_plan=plan)
-            mix = base.overlay(bed + BED_GAIN_DB)  # base (dura=duracao) e o leito; bed clipa nela
+            mix = _soma_camada(base, bed, BED_GAIN_DB)  # base (dura=duracao) e o leito; bed entra nela
         except Exception as e:                     # noqa: BLE001 — musica e best-effort
             print(f"[muntu] musica IA indisponivel ({e}); seguindo so com sound design")
 
@@ -169,7 +176,7 @@ def run(video_path: str, out_path: str = "outputs/scored.mp4", pack: str = "auto
                 continue
             if s is not None:
                 gain = p.get("gain_db", SFX_CLIMAX_GAIN)   # PIN calibra por pontuacao (ouvido)
-                mix = mix.overlay(s + gain, position=int(p["t"] * 1000))
+                mix = _soma_camada(mix, s, gain, position=int(p["t"] * 1000))
 
     mix = _finaliza(mix)
     mix.export("outputs/_audio.wav", format="wav")

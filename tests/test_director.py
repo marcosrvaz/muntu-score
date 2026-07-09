@@ -1,6 +1,6 @@
 from muntu.director import (
     estima_bpm, classifica_modo, monta_grade, quantiza, plano_de_score, carrega_pack,
-    composition_plan, pack_por_clima,
+    composition_plan, pack_por_clima, _papeis_secoes,
 )
 
 
@@ -50,6 +50,18 @@ def test_composition_plan_climax_no_pico_de_energia():
     cp = composition_plan(brief, PACK_ARCO)
     nomes = [s["section_name"] for s in cp["sections"]]
     assert nomes[-1] == "Climax" or "Climax" in nomes
+
+
+def test_papeis_secoes_video_curto_nao_crasha():
+    # nseg=1 (video < 2*SEC_MIN): so cabe Intro, nao ha secao pra virar Climax
+    assert _papeis_secoes(1, 0) == ["Intro"]
+
+
+def test_composition_plan_video_curto_nao_crasha():
+    # duracao < 2*SEC_MIN (6s) colapsa pra 1 secao; nao pode levantar IndexError
+    brief = {"duracao": 5.0, "cortes": [], "cenas": []}
+    cp = composition_plan(brief, PACK_ARCO)
+    assert all(s["duration_ms"] > 0 for s in cp["sections"])
 
 
 def test_carrega_pack_natal_sobrescreve_default():

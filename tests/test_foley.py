@@ -1,3 +1,6 @@
+import os
+
+from muntu import foley
 from muntu.foley import (
     foley_disponivel, _janela, seleciona_assinatura, _cache_key, gera_foley_de_corte,
 )
@@ -65,3 +68,23 @@ def test_cache_key_muda_com_corte():
     b = _cache_key("v.mp4", 6.0)
     assert a != b
     assert _cache_key("v.mp4", 3.0) == a      # deterministica
+
+
+# ---- cache corrompido nao pode quebrar o contrato best-effort ----
+
+def test_gera_foley_cache_corrompido_remove_e_regenera_none(monkeypatch, tmp_path):
+    monkeypatch.setattr(foley, "foley_disponivel", lambda: True)
+    cache_dir = str(tmp_path)
+    video_path, corte, prompt = "v.mp4", 3.0, ""
+    cache_file = foley._cache_path(foley._cache_key(video_path, corte, prompt), cache_dir)
+    os.makedirs(cache_dir, exist_ok=True)
+    with open(cache_file, "wb") as f:
+        f.write(b"nao e mp3")
+
+    def _falha(*a, **k):
+        raise RuntimeError("sem ffmpeg")
+    monkeypatch.setattr(foley, "_extrai_janela", _falha)
+
+    resultado = gera_foley_de_corte(video_path, corte, 16.0, cache_dir=cache_dir)
+    assert resultado is None
+    assert not os.path.exists(cache_file)

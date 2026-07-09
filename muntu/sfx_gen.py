@@ -41,7 +41,13 @@ def gera_sfx(texto: str, duracao_s: float = DUR_S,
     os.makedirs(cache_dir, exist_ok=True)
     cache = _cache_path(texto, duracao_s, cache_dir)
     if os.path.exists(cache):
-        return AudioSegment.from_file(cache)
+        try:
+            return AudioSegment.from_file(cache)
+        except Exception:
+            try:
+                os.remove(cache)          # cache corrompido: apaga e regenera abaixo
+            except OSError:
+                pass
     try:
         from elevenlabs import ElevenLabs
 

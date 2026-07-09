@@ -170,7 +170,13 @@ def gera_foley_de_corte(video_path: str, corte: float, duracao: float,
     os.makedirs(cache_dir, exist_ok=True)
     cache = _cache_path(_cache_key(video_path, corte, prompt), cache_dir)
     if os.path.exists(cache):
-        return AudioSegment.from_file(cache)
+        try:
+            return AudioSegment.from_file(cache)
+        except Exception:
+            try:
+                os.remove(cache)          # cache corrompido: apaga e regenera abaixo
+            except OSError:
+                pass
 
     inicio, fim = _janela(corte, duracao)
     clip = None

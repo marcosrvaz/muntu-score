@@ -329,6 +329,8 @@ def _idx_climax(fronteiras, cortes, cenas=None):
 
 def _papeis_secoes(nseg, idx_climax):
     """Nomes das seções: Intro / Build* / Climax / (Outro se nseg>=4)."""
+    if nseg <= 1:
+        return ["Intro"] * nseg
     nomes = ["Build"] * nseg
     nomes[0] = "Intro"
     ic = idx_climax

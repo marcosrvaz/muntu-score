@@ -287,6 +287,16 @@ def test_kitsch_nao_commita_valence_sobre_o_gate():
     assert "tongue-in-cheek" not in s and "over-sentimental" not in s
 
 
+def test_kitsch_nao_commita_valence_sobre_o_gate_retro():
+    # mesmo gate, mas filme RETRO: a linha `base = f"{era} {base}"` cria string NOVA ->
+    # guard por identidade (`base is not AMBIGUO`) falha e o kitsch vazava sobre o bed
+    # AMBIGUO do gate. O guard correto e semantico (`not gated`), nao identidade de objeto.
+    s = _prompt_da_parte({"tipo": "score", "clima": "tense", "confianca_valence": "baixa",
+                          "mood": "x"}, era="1980s", comico=True)
+    assert "neither clearly major nor minor" in s
+    assert "tongue-in-cheek" not in s and "over-sentimental" not in s
+
+
 def test_plano_da_parte_sobe_t_manda_no_arco():
     # direcao explicita "cresce no casamento": sobe_t da parte ancora o Apice, nao o climax
     p = {"start": 6.8, "end": 16.0, "tipo": "score", "clima": "romantic",

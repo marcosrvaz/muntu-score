@@ -194,7 +194,13 @@ def gera_musica(prompt: str, duracao: float, provider: str | None = None,
         if composition_plan else prompt
     cache = _cache_path(f"{p}|{plan_tag}|{round(duracao, 1)}", cache_dir)
     if os.path.exists(cache):
-        return AudioSegment.from_file(cache)
+        try:
+            return AudioSegment.from_file(cache)
+        except Exception:
+            try:
+                os.remove(cache)          # cache envenenado: apaga e regenera
+            except OSError:
+                pass
 
     if not musica_disponivel(p):
         raise RuntimeError(f"provedor '{p}' indisponivel (credencial/lib ausente).")
@@ -206,6 +212,9 @@ def gera_musica(prompt: str, duracao: float, provider: str | None = None,
     else:
         raise ValueError(f"provedor desconhecido: {p}")
 
-    with open(cache, "wb") as f:
+    seg = AudioSegment.from_file(io.BytesIO(audio))   # valida ANTES de cachear
+    tmp = cache + ".part"
+    with open(tmp, "wb") as f:
         f.write(audio)
-    return AudioSegment.from_file(io.BytesIO(audio))
+    os.replace(tmp, cache)
+    return seg

@@ -110,7 +110,7 @@ def _prompt_da_parte(parte: dict, era: str = "", packs_dir: str = "packs",
     # que o reader (LLM) leu — nao forcado aqui.
     if _e_retro(era) and era.lower() not in base.lower():
         base = f"{era} {base}"
-    if comico and not diegetic and base is not AMBIGUO:
+    if comico and not diegetic and not gated:
         # filme e COMEDIA (reader, film-level): o score curado toca DELIBERADAMENTE cafona —
         # kitsch, melodrama tongue-in-cheek (a comedia romantica leva a serio demais de proposito).
         # NUNCA sobre o AMBIGUO do gate: "over-sentimental" commitaria a valence que o gate segurou.
