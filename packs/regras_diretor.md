@@ -27,6 +27,8 @@ Nota de vocabulário: "engraçado" aqui inclui divertido/fun/alto-astral — nã
 - elevador ou lobby de hotel -> pode ser DIEGÉTICA: bossa nova "mal feita" com órgão, kitsch/brega
 - situação engraçada/divertida -> música CANTADA no estilo Elvis ou Johnny Cash
 - filme sério -> orquestral SEM voz, séria
+- criança / situação infantil -> marimba, xilofone, vibrafone ou pizzicato
+- pizzicato também sugere situação cômica/irônica
 - força/atitude urbana (sincero) -> hip hop/rap estilo Eminem "8 Mile"
 - comercial de CARRO que precisa passar força -> épica clássica OU hip hop estilo 8 Mile
 - modernidade, coisa jovem e descolada -> indie rock OU indie eletrônico
