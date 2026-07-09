@@ -297,6 +297,34 @@ def test_kitsch_nao_commita_valence_sobre_o_gate_retro():
     assert "tongue-in-cheek" not in s and "over-sentimental" not in s
 
 
+def test_prompt_compoe_cultura_e_instrumentacao():
+    parte = {"tipo": "score", "clima": "", "mood": "romantic ballad",
+             "cultura": "brega", "instrumentacao": ["saxophone"],
+             "start": 0.0, "end": 10.0}
+    p = _prompt_da_parte(parte)
+    assert "brega" in p and "saxophone" in p
+
+
+def test_ironia_kitsch_aplica_mesmo_sem_comico():
+    parte = {"tipo": "score", "clima": "", "mood": "romantic ballad",
+             "ironia": "kitsch", "start": 0.0, "end": 10.0}
+    assert "kitsch" in _prompt_da_parte(parte, comico=False)
+
+
+def test_ironia_deadpan_bloqueia_kitsch_mesmo_comico():
+    # deadpan = musica straight contra o absurdo -> kitsch destruiria o contraste
+    parte = {"tipo": "score", "clima": "", "mood": "elegant piano",
+             "ironia": "deadpan", "start": 0.0, "end": 10.0}
+    assert "kitsch" not in _prompt_da_parte(parte, comico=True)
+
+
+def test_comico_sem_ironia_mantem_kitsch_legado():
+    # timeline antiga (sem ironia): comportamento atual preservado
+    parte = {"tipo": "score", "clima": "", "mood": "romantic ballad",
+             "start": 0.0, "end": 10.0}
+    assert "kitsch" in _prompt_da_parte(parte, comico=True)
+
+
 def test_plano_da_parte_sobe_t_manda_no_arco():
     # direcao explicita "cresce no casamento": sobe_t da parte ancora o Apice, nao o climax
     p = {"start": 6.8, "end": 16.0, "tipo": "score", "clima": "romantic",

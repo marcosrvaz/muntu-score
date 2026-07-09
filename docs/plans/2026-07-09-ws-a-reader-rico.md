@@ -197,7 +197,7 @@ Import no topo: `from muntu import mood` vira `from muntu import mood, tags as t
 - Consumes: campos `ironia`/`cultura`/`instrumentacao` da parte (Task 2).
 - Produces: assinatura de `_prompt_da_parte` INALTERADA (`parte, era, packs_dir, comico, cortes`). Comportamento novo só quando os campos existem.
 
-- [ ] **Step 1: Testes que falham** (padrão existente do arquivo: montar `parte` dict e chamar `trilha._prompt_da_parte`)
+- [x] **Step 1: Testes que falham** (padrão existente do arquivo: montar `parte` dict e chamar `trilha._prompt_da_parte`)
 
 ```python
 def test_prompt_compoe_cultura_e_instrumentacao():
@@ -228,9 +228,9 @@ def test_comico_sem_ironia_mantem_kitsch_legado():
     assert "kitsch" in trilha._prompt_da_parte(parte, comico=True)
 ```
 
-- [ ] **Step 2: Rodar e ver falhar** — `pytest tests/test_trilha.py -v` → FAIL.
+- [x] **Step 2: Rodar e ver falhar** — `pytest tests/test_trilha.py -v` → FAIL.
 
-- [ ] **Step 3: Editar `_prompt_da_parte`** — substituir o bloco atual `if comico and not diegetic and not gated:` (linhas 120-124) por:
+- [x] **Step 3: Editar `_prompt_da_parte`** — substituir o bloco atual `if comico and not diegetic and not gated:` (linhas 120-124) por:
 
 ```python
     cultura = (parte.get("cultura") or "").strip()
@@ -249,9 +249,9 @@ def test_comico_sem_ironia_mantem_kitsch_legado():
         base = f"{base}, deliberately kitsch and cheesy, over-sentimental tongue-in-cheek melodrama"
 ```
 
-- [ ] **Step 4: Rodar** — `pytest tests/test_trilha.py -v` → PASS; `pytest tests/` → verde.
+- [x] **Step 4: Rodar** — `pytest tests/test_trilha.py -v` → PASS; `pytest tests/` → verde.
 
-- [ ] **Step 5: PARAR — usuário revisa+commita.**
+- [x] **Step 5: PARAR — usuário revisa+commita.**
 
 ---
 
