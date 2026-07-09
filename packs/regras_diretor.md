@@ -22,6 +22,7 @@ Nota de vocabulário: "engraçado" aqui inclui divertido/fun/alto-astral — nã
 - situação latino-americana, política ou de protesto -> ritmos latinos modernos (cúmbia), puros ou fundidos com eletrônica/acústico
 - tensão DIVERTIDA -> surf rock anos 60 estilo Tarantino
 - churrasco, feijoada, festa brasileira -> samba, pagode
+- situação engraçada/divertida -> drama musical usado com ironia: ópera, ou RELEITURA/paródia de clássico de filme (Embalos de Sábado à Noite, "I Like to Move It" do Madagascar)
 - força/atitude urbana (sincero) -> hip hop/rap estilo Eminem "8 Mile"
 - comercial de CARRO que precisa passar força -> épica clássica OU hip hop estilo 8 Mile
 - modernidade, coisa jovem e descolada -> indie rock OU indie eletrônico
@@ -30,5 +31,5 @@ Nota de vocabulário: "engraçado" aqui inclui divertido/fun/alto-astral — nã
 - sofisticação -> música francesa (cantada em francês)
 - fashion/moda -> eletrônica minimalista sofisticada
 - cosméticos (sério) -> eletrônica soft/lenta e mínima, bossa japonesa; OU reggaeton ESTILIZADO soft (beleza feminina)
-- tecnologia -> eletrônica um pouco mais rápida
+- tecnologia -> eletrônica minimalista, ou um pouco mais rápida
 - reggaeton EXAGERADO -> vira comédia (nunca em cosmético sério)
