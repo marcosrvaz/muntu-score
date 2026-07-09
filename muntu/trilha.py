@@ -508,7 +508,10 @@ def monta_trilha(timeline: dict, duracao: float, packs_dir: str = "packs",
     if stop_t is not None:
         ms = int(stop_t * 1000)
         p_stop = next((p for p in partes if p["start"] <= stop_t < p["end"]), None)
-        p_fecha = next((p for p in partes if p["end"] == stop_t and p.get("tipo") == "diegetic"), None)
+        # fronteira com tolerancia: stop_t e end podem vir de fontes distintas (_t_de_cena vs
+        # timeline) e divergir por float (4.999999 vs 5.0) — igualdade exata perderia o gag.
+        p_fecha = next((p for p in partes
+                        if abs(p.get("end", -1) - stop_t) < 1e-3 and p.get("tipo") == "diegetic"), None)
         if p_stop and p_stop.get("tipo") == "diegetic":
             if filme_comico:
                 # o wind-down (vitrola desligando) ocupa do beat ATE O CORTE da cena
