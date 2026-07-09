@@ -89,3 +89,61 @@ def tagueia_musica(video_path: str, cortes: list[float], duracao: float) -> list
         import sys
         print(f"[muntu] tagueador musica falhou ({type(e).__name__}: {e})", file=sys.stderr)
         return []
+
+
+PROMPT_AUDIO = (
+    "You are a SOUND DESIGNER + VOICE CASTING DIRECTOR listening to the full audio of ONE "
+    "real TV commercial. Tag what you HEAR (ignore the music — another pass covers it):\n"
+    "1) sfx: {\"ambiencia\": \"<bed/room tone, e.g. 'indoor party crowd'>\", "
+    "\"eventos\": [up to 3 short foley/event sounds], \"assinatura\": \"<the ONE sound that "
+    "lands the climax, or ''>\"}.\n"
+    "2) vo: the voiceover/narration VOICE (null if there is NO spoken voiceover): "
+    "{\"genero\": \"male|female|neutral\", \"idade\": \"young adult|middle-aged|elderly\", "
+    "\"tom\": \"autoritario|caloroso|hype|luxo-sussurro|deadpan-comico\", "
+    "\"timbre\": \"deep|warm|gravelly|smooth|raspy|breathy\", "
+    "\"pace\": \"fast|measured|slow\", \"sotaque\": \"<accent, e.g. 'neutro BR'>\", "
+    "\"energia\": <1-5>}.\n"
+    'Return ONLY JSON: {"sfx": {...}, "vo": {...}|null}'
+)
+
+
+def _extrai_wav(video_path: str) -> str:
+    """Trilha de áudio do ad -> wav 16kHz mono temp (análise de fala/SFX não precisa de
+    mais, e o payload base64 fica pequeno). Chamador apaga."""
+    fd, dst = tempfile.mkstemp(suffix=".wav")
+    os.close(fd)
+    subprocess.run(["ffmpeg", "-y", "-i", video_path, "-ac", "1", "-ar", "16000", dst],
+                   check=True, capture_output=True)
+    return dst
+
+
+def _normaliza_audio(data) -> dict:
+    """Saída do modelo -> {sfx, vo} validados. vo null preservado (ad sem locução)."""
+    if not isinstance(data, dict):
+        return {"sfx": None, "vo": None}
+    sfx = tags.valida_tags(data["sfx"], "sfx") if isinstance(data.get("sfx"), dict) else None
+    vo = tags.valida_tags(data["vo"], "vo") if isinstance(data.get("vo"), dict) else None
+    return {"sfx": sfx, "vo": vo}
+
+
+def tagueia_audio(video_path: str) -> dict:
+    """Ad real -> tags de SFX + VO OUVINDO o áudio (não os frames — traço de voz é
+    análise de áudio, spec §2.2). {"sfx": None, "vo": None} se indisponível/falha."""
+    if not disponivel():
+        return {"sfx": None, "vo": None}
+    wav = None
+    try:
+        wav = _extrai_wav(video_path)
+        with open(wav, "rb") as f:
+            b64 = base64.standard_b64encode(f.read()).decode("utf-8")
+        return _normaliza_audio(_chama([
+            {"type": "text", "text": PROMPT_AUDIO},
+            {"type": "input_audio", "input_audio": {"data": b64, "format": "wav"}},
+        ]))
+    except Exception as e:                     # noqa: BLE001 — best-effort
+        import sys
+        print(f"[muntu] tagueador audio falhou ({type(e).__name__}: {e})", file=sys.stderr)
+        return {"sfx": None, "vo": None}
+    finally:
+        if wav and os.path.exists(wav):
+            os.remove(wav)
