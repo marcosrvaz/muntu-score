@@ -1,4 +1,7 @@
-"""Audio-embedding CLAP (laion/larger_clap_music, D3): casa por SOM.
+"""Audio-embedding CLAP (laion/clap-htsat-unfused, D3 revisada 2026-07-09): casa por SOM.
+larger_clap_music DESCARTADO: checkpoint degenerado no ambiente (cos(ad_a, ad_b)=0.98,
+"bolero" vs "heavy metal" cos=0.999, zero-shot uniforme 0.2 ate na pipeline oficial HF);
+clap-htsat-unfused diferenciou de verdade (bossa 0.59 vs metal 0.0) no sanity.
 Janelas de 10s @48kHz + mean-pool L2-normalizado (prática padrão pra faixa longa).
 CLI stdin/stdout-JSON; arquivo que falha -> null na posição (lote não morre)."""
 import json
@@ -30,8 +33,8 @@ def main():
     import librosa
     import numpy as np
     from transformers import ClapModel, ClapProcessor
-    model = ClapModel.from_pretrained("laion/larger_clap_music")
-    proc = ClapProcessor.from_pretrained("laion/larger_clap_music")
+    model = ClapModel.from_pretrained("laion/clap-htsat-unfused")
+    proc = ClapProcessor.from_pretrained("laion/clap-htsat-unfused")
     out = []
     for p in paths:
         try:
