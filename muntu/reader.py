@@ -172,12 +172,20 @@ def _beats(itens, campo: str, cenas: list[dict]) -> list[dict]:
 
 def _normaliza(data: dict, cenas: list[dict], duracao: float) -> dict:
     """Valida a saida do VLM: cena_ini/fim (1-based) -> tempos, tipo diegetic|score,
-    cobertura contigua, climax/stop numericos (cena + tempo)."""
+    cobertura contigua, climax/stop numericos (cena + tempo). cenas=[] (filme sem cena
+    legivel) -> partes=[] sem crashar. Parte individual ilegivel (cena_ini nao numerico,
+    item que nao e objeto) e descartada isolada -> nao derruba as partes validas."""
+    import sys
+
     n = len(cenas)
     partes = []
-    for p in data.get("partes", []):
-        ini = max(1, min(int(p.get("cena_ini", 1)), n))
-        fim = max(ini, min(int(p.get("cena_fim", ini)), n))
+    for p in (data.get("partes", []) if cenas else []):
+        try:
+            ini = max(1, min(int(p.get("cena_ini", 1)), n))
+            fim = max(ini, min(int(p.get("cena_fim", ini)), n))
+        except (AttributeError, TypeError, ValueError) as e:
+            print(f"[muntu] parte ilegivel descartada ({e}): {p!r}", file=sys.stderr)
+            continue
         tipo = "diegetic" if str(p.get("tipo", "score")).lower().startswith("dieg") else "score"
         partes.append({
             "cena_ini": ini, "cena_fim": fim,
@@ -214,7 +222,7 @@ def _normaliza(data: dict, cenas: list[dict], duracao: float) -> dict:
                        if isinstance(stop, int) and 1 <= stop <= len(cenas) else None),
         "pontuacoes": pontuacoes,
         "citacoes": citacoes,
-        "partes": _merge_curtas(_cobre(partes, cenas, duracao)),
+        "partes": [] if not cenas else _merge_curtas(_cobre(partes, cenas, duracao)),
     }
 
 

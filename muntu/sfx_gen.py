@@ -33,6 +33,29 @@ def _cache_path(texto: str, dur: float, cache_dir: str) -> str:
     return os.path.join(cache_dir, h + ".mp3")
 
 
+def _eh_transiente(e) -> bool:
+    """Timeout ou erro 5xx do SDK — falha efemera, vale 1 retry."""
+    import httpx
+
+    if isinstance(e, httpx.TimeoutException):
+        return True
+    status = getattr(e, "status_code", None)
+    return isinstance(status, int) and status >= 500
+
+
+def _com_retry_transiente(fn, contexto: str):
+    """1 retry pra falha transiente (timeout/5xx) numa chamada ElevenLabs."""
+    try:
+        return fn()
+    except Exception as e:                    # noqa: BLE001 — filtra transiente abaixo
+        if not _eh_transiente(e):
+            raise
+        import sys
+        print(f"[muntu] {contexto} falhou (transiente: {type(e).__name__}); retry 1x",
+              file=sys.stderr)
+        return fn()
+
+
 def gera_sfx(texto: str, duracao_s: float = DUR_S,
              cache_dir: str = CACHE_DIR) -> AudioSegment | None:
     """One-shot de SFX do `texto`. None (best-effort) se indisponivel ou falhar."""
@@ -51,9 +74,11 @@ def gera_sfx(texto: str, duracao_s: float = DUR_S,
     try:
         from elevenlabs import ElevenLabs
 
-        client = ElevenLabs()
-        out = client.text_to_sound_effects.convert(
-            text=f"{texto}{SUFIXO}", duration_seconds=duracao_s)
+        client = ElevenLabs(timeout=60)
+        out = _com_retry_transiente(
+            lambda: client.text_to_sound_effects.convert(
+                text=f"{texto}{SUFIXO}", duration_seconds=duracao_s),
+            "text_to_sound_effects.convert")
         data = out if isinstance(out, (bytes, bytearray)) else b"".join(out)
         seg = AudioSegment.from_file(io.BytesIO(data))
         seg.export(cache, format="mp3")

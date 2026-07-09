@@ -1,8 +1,9 @@
 """Task 8 — musica-base (bed) instrumental. 2 provedores licenciados:
 
-- **stability** (default) — Stable Audio 2.5 via API oficial Stability (`STABILITY_API_KEY`).
+- **stability** — Stable Audio 2.5 via API oficial Stability (`STABILITY_API_KEY`).
   Pay-per-use, sem assinatura. "The pick" pra beds instrumentais (pesquisa jul/2026).
-- **elevenlabs** — ElevenLabs Music V2 (`ELEVENLABS_API_KEY`, plano pago). Vence instrumentais.
+- **elevenlabs** (default) — ElevenLabs Music V2 (`ELEVENLABS_API_KEY`, plano pago). Vence
+  instrumentais; default em TUDO (composition_plan/arco so existe nesse provedor — ver director.py).
 
 Escolhe via env `MUNTU_BED_PROVIDER`. Suno VETADO (litigio Sony/UMG + sem API publica +
 brand-safety — [[geradores-musica-ia-2026-06]]). A musica e ATMOSFERA; NUNCA carrega o sync
@@ -19,11 +20,11 @@ import os
 from pydub import AudioSegment
 
 CACHE_DIR = "outputs/cache"
-DEFAULT_PROVIDER = "stability"
+DEFAULT_PROVIDER = "elevenlabs"
 
 
 def _prov(provider: str | None) -> str:
-    """Provider explicito, senao env MUNTU_BED_PROVIDER, senao stability (lido em runtime)."""
+    """Provider explicito, senao env MUNTU_BED_PROVIDER, senao elevenlabs (lido em runtime)."""
     return provider or os.environ.get("MUNTU_BED_PROVIDER", DEFAULT_PROVIDER)
 
 # --- Stable Audio 2.5 (Stability oficial) ---
@@ -128,11 +129,34 @@ def _reconcilia_chunks(plan, cp: dict):
         return plan
 
 
+def _eh_transiente(e) -> bool:
+    """Timeout ou erro 5xx do SDK — falha efemera, vale 1 retry."""
+    import httpx
+
+    if isinstance(e, httpx.TimeoutException):
+        return True
+    status = getattr(e, "status_code", None)
+    return isinstance(status, int) and status >= 500
+
+
+def _com_retry_transiente(fn, contexto: str):
+    """1 retry pra falha transiente (timeout/5xx) numa chamada ElevenLabs."""
+    try:
+        return fn()
+    except Exception as e:                    # noqa: BLE001 — filtra transiente abaixo
+        if not _eh_transiente(e):
+            raise
+        import sys
+        print(f"[muntu] {contexto} falhou (transiente: {type(e).__name__}); retry 1x",
+              file=sys.stderr)
+        return fn()
+
+
 def _gera_elevenlabs(prompt: str, duracao: float, composition_plan: dict | None = None,
                      _retry: bool = True) -> bytes:
     from elevenlabs import ElevenLabs
 
-    client = ElevenLabs()
+    client = ElevenLabs(timeout=180)
     if composition_plan is not None:
         # musica COM arco: dict do director -> objeto tipado MusicPrompt (SDK exige)
         from elevenlabs.types.music_prompt import MusicPrompt
@@ -155,14 +179,18 @@ def _gera_elevenlabs(prompt: str, duracao: float, composition_plan: dict | None 
         # (seed) -> chunks, preservando as durações das seções (alinhadas ao filme).
         ms = sum(s["duration_ms"] for s in cp["sections"])
         try:
-            plan = client.music.composition_plan.create(
-                prompt=", ".join(cp.get("positive_global_styles", [])),
-                music_length_ms=ms, model_id=EL_MODEL, source_composition_plan=source)
+            plan = _com_retry_transiente(
+                lambda: client.music.composition_plan.create(
+                    prompt=", ".join(cp.get("positive_global_styles", [])),
+                    music_length_ms=ms, model_id=EL_MODEL, source_composition_plan=source),
+                "composition_plan.create")
             plan = _reconcilia_chunks(plan, cp)   # create redistribui estilos -> forca de volta
             # instrumental vem do plano (negative "vocals" + lines vazias)
-            resp = client.music.compose(
-                composition_plan=plan, model_id=EL_MODEL, output_format=EL_OUTPUT,
-                respect_sections_durations=cp.get("respect_sections_durations", True))
+            resp = _com_retry_transiente(
+                lambda: client.music.compose(
+                    composition_plan=plan, model_id=EL_MODEL, output_format=EL_OUTPUT,
+                    respect_sections_durations=cp.get("respect_sections_durations", True)),
+                "music.compose")
         except Exception as e:                   # noqa: BLE001 — 400 de ToS traz plano corrigido
             sugestao = _sugestao_de_plano(e) if _retry else None
             if sugestao is None:
@@ -174,9 +202,11 @@ def _gera_elevenlabs(prompt: str, duracao: float, composition_plan: dict | None 
             return _gera_elevenlabs(prompt, duracao, composition_plan=sugestao, _retry=False)
     else:
         ms = max(EL_MIN_MS, min(EL_MAX_MS, int(duracao * 1000)))
-        resp = client.music.compose(
-            prompt=prompt, music_length_ms=ms, model_id=EL_MODEL,
-            force_instrumental=True, output_format=EL_OUTPUT)
+        resp = _com_retry_transiente(
+            lambda: client.music.compose(
+                prompt=prompt, music_length_ms=ms, model_id=EL_MODEL,
+                force_instrumental=True, output_format=EL_OUTPUT),
+            "music.compose")
     return resp if isinstance(resp, (bytes, bytearray)) else b"".join(resp)
 
 

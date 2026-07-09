@@ -103,7 +103,8 @@ def _cache_path(chave: str, cache_dir: str) -> str:
 
 def _extrai_janela(video_path: str, inicio: float, fim: float) -> str:
     """Recorta o trecho de VIDEO (sem audio) ao redor do corte -> mp4 temporario."""
-    dst = tempfile.mktemp(suffix=".mp4")
+    fd, dst = tempfile.mkstemp(suffix=".mp4")
+    os.close(fd)
     subprocess.run(
         ["ffmpeg", "-y", "-ss", f"{inicio}", "-i", video_path, "-t", f"{max(0.1, fim - inicio)}",
          "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p", dst],

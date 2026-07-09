@@ -66,8 +66,10 @@ def _rubberband(bed, tempo: float):
     """Time-stretch via ffmpeg rubberband (preserva pitch). tempo>1 = mais rapido/curto."""
     from pydub import AudioSegment
 
-    src = tempfile.mktemp(suffix=".wav")
-    dst = tempfile.mktemp(suffix=".wav")
+    fd_src, src = tempfile.mkstemp(suffix=".wav")
+    os.close(fd_src)
+    fd_dst, dst = tempfile.mkstemp(suffix=".wav")
+    os.close(fd_dst)
     try:
         bed.export(src, format="wav")
         subprocess.run(

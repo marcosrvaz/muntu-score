@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 
 # --- Pack: perilhas que o ouvido calibra (default embutido; packs/*.json sobrescreve) ---
 PACK_DEFAULT = {
@@ -25,11 +26,16 @@ PACK_DEFAULT = {
 
 def carrega_pack(nome: str = "default", packs_dir: str = "packs") -> dict:
     """Pack de direcao = PACK_DEFAULT + overrides de packs/{nome}.json. Faltou = default."""
+    nome = os.path.basename(str(nome))               # nome vem de fora (API Gradio) — sem traversal
     caminho = os.path.join(packs_dir, f"{nome}.json")
     if not os.path.exists(caminho):
         return dict(PACK_DEFAULT)
-    with open(caminho, encoding="utf-8") as f:
-        return {**PACK_DEFAULT, **json.load(f)}
+    try:
+        with open(caminho, encoding="utf-8") as f:
+            return {**PACK_DEFAULT, **json.load(f)}
+    except (OSError, json.JSONDecodeError):
+        print(f"[muntu] pack '{nome}' ilegivel; usando default", file=sys.stderr)
+        return dict(PACK_DEFAULT)
 
 
 def pack_por_clima(clima: str | None, packs_dir: str = "packs",
@@ -69,11 +75,14 @@ def estima_bpm(cortes: list[float], bpm_range=(100, 132), tol: float = 0.05) -> 
 
     Retorna bpm, fase (offset em s), confianca (fracao de cortes na grade).
     """
+    lo, hi = sorted((int(bpm_range[0]), int(bpm_range[1])))
+    lo = max(1, lo)                                   # bpm 0 -> ZeroDivisionError no P
+    hi = max(lo, hi)
     if not cortes:
-        return {"bpm": bpm_range[0], "fase": 0.0, "confianca": 0.0}
+        return {"bpm": lo, "fase": 0.0, "confianca": 0.0}
 
     melhor = None  # (score, bpm, phi, confianca)
-    for bpm in range(int(bpm_range[0]), int(bpm_range[1]) + 1):
+    for bpm in range(lo, hi + 1):
         P = 60.0 / bpm
         for fase_step in range(50):                 # varre fase dentro de 1 batida
             phi = fase_step / 50.0 * P

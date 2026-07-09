@@ -96,7 +96,10 @@ def transpor(seg: AudioSegment, semitonos: float) -> AudioSegment:
     if not semitonos:
         return seg
     fator = 2 ** (semitonos / 12)
-    src, dst = tempfile.mktemp(suffix=".wav"), tempfile.mktemp(suffix=".wav")
+    fd_src, src = tempfile.mkstemp(suffix=".wav")
+    os.close(fd_src)
+    fd_dst, dst = tempfile.mkstemp(suffix=".wav")
+    os.close(fd_dst)
     try:
         seg.export(src, format="wav")
         subprocess.run(

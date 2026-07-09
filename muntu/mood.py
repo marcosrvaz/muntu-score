@@ -161,9 +161,11 @@ def aplica_saida(cenas: list[dict], mood: str, energias: list,
     `climax` = numero de cena 1..N (julgamento narrativo, nao energia crua); marca
     `cena["climax"]=True` na cena do pico. `narrativa` fica na cena de climax pra downstream.
     """
+    m = str(mood or "").strip().lower()
+    mood = m if m in MOODS else "neutral"   # normaliza case/espaco do VLM; fora do vocab -> "neutral" (casa com packs)
     for i, cena in enumerate(cenas):
         e = energias[i] if i < len(energias) else 3
-        cena["clima"] = mood or "neutro"
+        cena["clima"] = mood
         cena["energia"] = max(1, min(5, int(e))) if isinstance(e, (int, float)) else 3
         cena["climax"] = False
     if isinstance(climax, (int, float)) and cenas:
@@ -203,7 +205,7 @@ def analisa_clima(video_path: str, cortes: list[float], duracao: float) -> list[
         if m is None:
             return []                          # sem frame -> cai na heuristica
         data = _le_historia(m)
-        cenas = aplica_saida(cenas, data.get("mood", "neutro"), data.get("energias", []),
+        cenas = aplica_saida(cenas, data.get("mood", "neutral"), data.get("energias", []),
                              data.get("narrativa", ""), data.get("climax"))
         nar = data.get("narrativa", "")
         if nar:

@@ -1,3 +1,5 @@
+import os
+
 from pydub import AudioSegment
 
 
@@ -8,7 +10,7 @@ def placement_plan(cuts: list, duracao: float, stem: str = "hit.wav") -> list:
 def render_signature(plan: list, duracao: float, stems_dir: str) -> AudioSegment:
     track = AudioSegment.silent(duration=int(duracao * 1000))
     for p in plan:
-        hit = AudioSegment.from_wav(f"{stems_dir}/{p['stem']}")
+        hit = AudioSegment.from_wav(os.path.join(stems_dir, os.path.basename(str(p["stem"]))))
         track = track.overlay(hit, position=int(p["t"] * 1000))
     return track
 
@@ -22,7 +24,9 @@ def render_acentos(acentos: list, duracao: float, stems_dir: str,
     """
     track = AudioSegment.silent(duration=int(duracao * 1000))
     for a in acentos:
-        hit = AudioSegment.from_wav(f"{stems_dir}/{a.get('stem', stem)}")
+        hit = AudioSegment.from_wav(
+            os.path.join(stems_dir, os.path.basename(str(a.get("stem", stem))))
+        )
         ganho = a.get("ganho_db", 0)
         if ganho:
             hit = hit + ganho

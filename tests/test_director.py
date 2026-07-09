@@ -1,6 +1,6 @@
 from muntu.director import (
     estima_bpm, classifica_modo, monta_grade, quantiza, plano_de_score, carrega_pack,
-    composition_plan, pack_por_clima, _papeis_secoes,
+    composition_plan, pack_por_clima, _papeis_secoes, PACK_DEFAULT,
 )
 
 
@@ -194,3 +194,26 @@ def test_bed_prompt_fallback_sem_template():
             "bed_estilo": "warm bed, no drums"}
     plano = plano_de_score({"duracao": 4.0, "cortes": [0.5, 1.0], "cenas": []}, pack)
     assert plano["bed_prompt"].endswith(f"{plano['bpm']} BPM")
+
+
+def test_carrega_pack_json_corrompido_cai_no_default(tmp_path):
+    (tmp_path / "quebrado.json").write_text("{nao e json valido", encoding="utf-8")
+    p = carrega_pack("quebrado", packs_dir=str(tmp_path))
+    assert p == PACK_DEFAULT
+
+
+def test_carrega_pack_path_traversal_nao_escapa(tmp_path):
+    # nome com ".." nao pode ler fora de packs_dir; sem match dentro -> default, sem excecao
+    p = carrega_pack("../../etc/passwd", packs_dir=str(tmp_path))
+    assert p == PACK_DEFAULT
+
+
+def test_estima_bpm_range_invertido_nao_crasha():
+    cortes = [0.5, 1.0, 2.0, 3.5]
+    g = estima_bpm(cortes, bpm_range=(132, 100))
+    assert isinstance(g, dict) and g["bpm"] >= 1
+
+
+def test_estima_bpm_range_zerado_nao_crasha():
+    g = estima_bpm([0.5, 1.0], bpm_range=(0, 0))
+    assert isinstance(g, dict) and g["bpm"] >= 1

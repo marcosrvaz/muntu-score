@@ -1,4 +1,5 @@
 import os
+import sys
 
 from pydub import AudioSegment
 from pydub.effects import normalize
@@ -57,8 +58,11 @@ def run(video_path: str, out_path: str = "outputs/scored.mp4", pack: str = "auto
     com timeline_path=<esse JSON>.
     `banco=True` = provedor B (Epidemic): seta bed_file das partes score com faixa REAL do
     catalogo licenciado (via mood do reader) — estocasticidade zero. Opt-in; sem key cai em A
-    (geracao). Ver muntu/epidemic.py + [[apis-musica-licenciada-2026-07]]."""
-    os.makedirs("outputs", exist_ok=True)
+    (geracao). Ver muntu/epidemic.py + [[apis-musica-licenciada-2026-07]].
+    `out_path` tambem determina o wav intermediario (derivado, nao um caminho global) — evita
+    2 requests concorrentes (HF Space multi-sessao) se sobrescreverem."""
+    os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
+    audio_path = os.path.splitext(out_path)[0] + "_audio.wav"
 
     try:
         brief = analyze(video_path)
@@ -169,6 +173,10 @@ def run(video_path: str, out_path: str = "outputs/scored.mp4", pack: str = "auto
     # a musica (mesmo gain do climax). O reader ESCOLHE (ou o PIN editado); aqui so executa.
     if sfx_gen.sfx_disponivel():
         for p in timeline.get("pontuacoes") or []:
+            t = p.get("t")
+            if isinstance(t, bool) or not isinstance(t, (int, float)):
+                print(f"[muntu] pontuacao sem tempo valido (t={t!r}); pulando", file=sys.stderr)
+                continue
             try:
                 s = sfx_gen.gera_sfx(p["sfx"], duracao_s=1.5)
             except Exception as e:                 # noqa: BLE001 — pontuacao e best-effort
@@ -176,8 +184,12 @@ def run(video_path: str, out_path: str = "outputs/scored.mp4", pack: str = "auto
                 continue
             if s is not None:
                 gain = p.get("gain_db", SFX_CLIMAX_GAIN)   # PIN calibra por pontuacao (ouvido)
-                mix = _soma_camada(mix, s, gain, position=int(p["t"] * 1000))
+                mix = _soma_camada(mix, s, gain, position=int(t * 1000))
 
     mix = _finaliza(mix)
-    mix.export("outputs/_audio.wav", format="wav")
-    return mux(video_path, "outputs/_audio.wav", out_path)
+    mix.export(audio_path, format="wav")
+    try:
+        return mux(video_path, audio_path, out_path)
+    finally:
+        if os.path.exists(audio_path):
+            os.remove(audio_path)

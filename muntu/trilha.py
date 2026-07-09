@@ -131,7 +131,10 @@ def _prompt_da_parte(parte: dict, era: str = "", packs_dir: str = "packs",
 def _reverb_sala(seg: AudioSegment) -> AudioSegment:
     """Ambiencia de sala leve via ffmpeg aecho (aproxima 'saindo das caixas num ambiente').
     Best-effort: falha (sem ffmpeg/filtro) -> seg original."""
-    src, dst = tempfile.mktemp(suffix=".wav"), tempfile.mktemp(suffix=".wav")
+    fd_src, src = tempfile.mkstemp(suffix=".wav")
+    fd_dst, dst = tempfile.mkstemp(suffix=".wav")
+    os.close(fd_src)
+    os.close(fd_dst)
     try:
         seg.export(src, format="wav")
         subprocess.run(["ffmpeg", "-y", "-i", src, "-af", "aecho=0.8:0.9:40|75:0.3|0.2", dst],
@@ -320,7 +323,8 @@ def _garante_rabo_vivo(bed: AudioSegment, prompt: str, plan: dict, dur_s: float,
     plan2["positive_global_styles"] = list(plan.get("positive_global_styles", [])) + \
         ["the final seconds stay at full arrangement and full volume"]
     try:
-        bed2 = musica.gera_musica(prompt, dur_s, composition_plan=plan2)
+        bed2 = musica.gera_musica(prompt, dur_s, provider=parte.get("provider"),
+                                  composition_plan=plan2)
     except Exception:                            # noqa: BLE001 — re-roll e best-effort
         return bed
     return bed2 if bed2[:corte][-RABO_MS:].dBFS > bed[:corte][-RABO_MS:].dBFS else bed
@@ -413,7 +417,6 @@ def monta_trilha(timeline: dict, duracao: float, packs_dir: str = "packs",
     fc = timeline.get("comico")                  # comedia e do FILME (reader, film-level):
     filme_comico = fc if isinstance(fc, bool) else any(_e_comico(p) for p in partes)
     climax_t = timeline.get("climax_t")
-    plano_ok = musica._prov(None) == "elevenlabs"   # composition_plan so existe la
     trilha = AudioSegment.silent(duration=int(duracao * 1000))
     for parte in partes:
         ini_ms = int(parte["start"] * 1000)
@@ -421,8 +424,17 @@ def monta_trilha(timeline: dict, duracao: float, packs_dir: str = "packs",
         if dur_ms <= 0:
             continue
         prompt = _prompt_da_parte(parte, era, packs_dir, comico=filme_comico, cortes=cortes)
-        plan = _plano_da_parte(parte, prompt, climax_t, packs_dir,
-                               cortes=cortes) if plano_ok else None
+        # composition_plan so existe no ElevenLabs — decisao e POR PARTE (PIN de provider),
+        # nao pelo provedor global (senao uma parte pinada em elevenlabs perde o arco quando
+        # o default do ambiente e outro provedor, e vice-versa: degrada em silencio).
+        prov_parte = musica._prov(parte.get("provider"))
+        if prov_parte == "elevenlabs":
+            plan = _plano_da_parte(parte, prompt, climax_t, packs_dir, cortes=cortes)
+        else:
+            plan = None
+            import sys
+            print(f"[muntu] parte S{parte.get('cena_ini')}: provedor '{prov_parte}' sem "
+                  "composition_plan (arco desligado)", file=sys.stderr)
         gera_ms = max(MIN_BED_MS, dur_ms)
         if parte.get("tipo") == "diegetic":     # corta no MEIO da faixa (energia cheia)
             gera_ms += DIEGETICO_PAD_MS

@@ -44,8 +44,9 @@ def test_gera_musica_usa_cache_sem_api(monkeypatch, tmp_path):
     assert len(seg) >= int(dur * 1000) - 100
 
 
-def test_provider_default_e_stability():
-    assert musica.DEFAULT_PROVIDER in ("stability", "elevenlabs")
+def test_provider_default_e_elevenlabs():
+    # default em TUDO (composition_plan/arco so existe no ElevenLabs — ver director.py)
+    assert musica.DEFAULT_PROVIDER == "elevenlabs"
 
 
 def test_sugestao_de_plano_extrai_do_erro_tos():
@@ -130,3 +131,87 @@ def test_gera_musica_cache_corrompido_regenera(monkeypatch, tmp_path):
     seg = gera_musica(prompt, dur, provider=prov, cache_dir=str(tmp_path))
     assert isinstance(seg, AudioSegment)
     assert len(seg) >= int(dur * 1000) - 100
+
+
+# ---- retry transiente (timeout/5xx) na chamada ElevenLabs ----
+
+def test_gera_elevenlabs_retry_transiente_5xx_retorna_audio(monkeypatch):
+    import sys
+    import types
+
+    from muntu.musica import _gera_elevenlabs
+
+    chamadas = []
+
+    class Erro503(Exception):
+        status_code = 503
+
+    class FakeMusic:
+        @staticmethod
+        def compose(**kwargs):
+            chamadas.append(kwargs)
+            if len(chamadas) == 1:
+                raise Erro503("indisponivel")
+            return b"audio-ok"
+
+    class FakeClient:
+        def __init__(self, *a, **k):
+            self.music = FakeMusic()
+
+    fake_elevenlabs = types.ModuleType("elevenlabs")
+    fake_elevenlabs.ElevenLabs = FakeClient
+    monkeypatch.setitem(sys.modules, "elevenlabs", fake_elevenlabs)
+
+    audio = _gera_elevenlabs("prompt qualquer", 8.0)
+    assert audio == b"audio-ok"
+    assert len(chamadas) == 2          # 1a falhou (transiente), 2a retry funcionou
+
+
+def test_gera_elevenlabs_nao_retenta_erro_nao_transiente(monkeypatch):
+    import sys
+    import types
+
+    from muntu.musica import _gera_elevenlabs
+
+    chamadas = []
+
+    class Erro401(Exception):
+        status_code = 401
+
+    class FakeMusic:
+        @staticmethod
+        def compose(**kwargs):
+            chamadas.append(kwargs)
+            raise Erro401("nao autorizado")
+
+    class FakeClient:
+        def __init__(self, *a, **k):
+            self.music = FakeMusic()
+
+    fake_elevenlabs = types.ModuleType("elevenlabs")
+    fake_elevenlabs.ElevenLabs = FakeClient
+    monkeypatch.setitem(sys.modules, "elevenlabs", fake_elevenlabs)
+
+    try:
+        _gera_elevenlabs("prompt qualquer", 8.0)
+        assert False, "deveria ter propagado Erro401"
+    except Erro401:
+        pass
+    assert len(chamadas) == 1          # 401 nao e transiente: 1 chamada so
+
+
+def test_com_retry_transiente_retenta_em_timeout_httpx():
+    import httpx
+
+    from muntu.musica import _com_retry_transiente
+
+    chamadas = []
+
+    def fn():
+        chamadas.append(1)
+        if len(chamadas) == 1:
+            raise httpx.TimeoutException("timeout")
+        return "ok"
+
+    assert _com_retry_transiente(fn, "teste") == "ok"
+    assert len(chamadas) == 2

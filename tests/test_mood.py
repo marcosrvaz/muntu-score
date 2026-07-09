@@ -55,10 +55,23 @@ def test_aplica_saida_energia_faltante_vira_3():
     assert [c["energia"] for c in out] == [4, 3, 3]
 
 
-def test_aplica_saida_mood_vazio_vira_neutro():
+def test_aplica_saida_mood_vazio_vira_neutral():
     cenas = _cenas_de_cortes([], duracao=5.0)
     out = aplica_saida(cenas, "", [])
-    assert out[0]["clima"] == "neutro" and out[0]["energia"] == 3
+    assert out[0]["clima"] == "neutral" and out[0]["energia"] == 3
+
+
+def test_aplica_saida_normaliza_case_e_espaco():
+    # mood cru do VLM ("Comedic", " SAD ") tem que casar com o vocab lowercased
+    cenas = _cenas_de_cortes([], duracao=5.0)
+    out = aplica_saida(cenas, " Comedic ", [3])
+    assert out[0]["clima"] == "comedic"
+
+
+def test_aplica_saida_mood_fora_do_vocab_vira_neutral():
+    cenas = _cenas_de_cortes([], duracao=5.0)
+    out = aplica_saida(cenas, "xyz_fora_do_vocab", [3])
+    assert out[0]["clima"] == "neutral"
 
 
 def test_analisa_clima_sem_key_devolve_vazio(monkeypatch):

@@ -1,3 +1,5 @@
+import uuid
+
 import gradio as gr
 from dotenv import load_dotenv
 
@@ -9,8 +11,11 @@ from pipeline import run
 def score(video, pack, banco):
     if not video:
         raise gr.Error("Sobe um clipe primeiro.")
+    # out_path unico por request: HF Space e multi-sessao, path fixo faz request concorrente
+    # sobrescrever o video de outro usuario.
+    out_path = f"outputs/scored_{uuid.uuid4().hex[:8]}.mp4"
     try:
-        return run(video, out_path="outputs/scored.mp4", pack=pack or "auto", banco=banco)
+        return run(video, out_path=out_path, pack=pack or "auto", banco=banco)
     except ValueError as e:
         raise gr.Error(str(e))
 

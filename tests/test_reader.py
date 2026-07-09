@@ -44,6 +44,31 @@ def test_normaliza_clampa_cena_fora_do_range():
     assert t["partes"][0]["cena_ini"] == 1 and t["partes"][0]["cena_fim"] == 4
 
 
+def test_normaliza_parte_malformada_e_descartada_sem_derrubar_as_demais():
+    # 1 parte ilegivel (cena_ini nao numerico) nao pode jogar fora as partes validas
+    data = {"partes": [
+        {"cena_ini": 1, "cena_fim": 2, "tipo": "score", "mood": "ok"},
+        {"cena_ini": "S1", "cena_fim": 2, "tipo": "score", "mood": "quebrada"}]}
+    t = _normaliza(data, CENAS, 12.0)
+    assert len(t["partes"]) == 1
+    assert t["partes"][0]["mood"] == "ok"
+
+
+def test_normaliza_parte_nao_dict_e_descartada():
+    data = {"partes": ["lixo", {"cena_ini": 1, "cena_fim": 2, "mood": "ok"}]}
+    t = _normaliza(data, CENAS, 12.0)
+    assert len(t["partes"]) == 1 and t["partes"][0]["mood"] == "ok"
+
+
+def test_normaliza_cenas_vazias_nao_estoura():
+    data = {"narrativa": "x", "climax": 3, "stop": 2, "partes": [
+        {"cena_ini": 1, "cena_fim": 4, "tipo": "score", "mood": "x"}]}
+    t = _normaliza(data, [], 12.0)
+    assert t["partes"] == []
+    assert t["climax_t"] is None and t["stop_t"] is None
+    assert t["pontuacoes"] == [] and t["citacoes"] == []
+
+
 def test_cobre_cola_buraco_entre_partes():
     # partes com buraco (fim=5, proximo start=9) -> cola sem gap
     partes = [{"cena_ini": 1, "cena_fim": 2, "start": 0.0, "end": 5.0, "tipo": "score", "mood": "", "papel": ""},

@@ -514,6 +514,43 @@ def test_warp_liga_no_score_com_pack_e_nao_no_diegetico(monkeypatch):
     assert 70 <= warps[0] <= 90                # BPM do range do pack romantico
 
 
+def test_garante_rabo_vivo_reroll_propaga_provider(monkeypatch):
+    # PIN camada 1: re-roll do rabo morto tem que respeitar o provider pinado da parte, senao
+    # a parte volta pro provedor default no re-roll (bug: chamada do re-roll nao passava provider)
+    morto = Sine(440).to_audio_segment(duration=8000) + AudioSegment.silent(duration=1500)
+    chamadas = []
+
+    def _spy(prompt, dur_s, provider=None, **k):
+        chamadas.append(provider)
+        return Sine(440).to_audio_segment(duration=int(dur_s * 1000))
+    monkeypatch.setattr(trilha.musica, "gera_musica", _spy)
+    plan = {"positive_global_styles": ["x"], "sections": []}
+    trilha._garante_rabo_vivo(morto, "p", plan, 9.5, {"cena_ini": 5, "provider": "elevenlabs"})
+    assert chamadas == ["elevenlabs"]
+
+
+def test_plano_por_parte_usa_provider_pinado_nao_o_global(monkeypatch):
+    # composition_plan tem que ser decidido pelo provider DA PARTE (PIN), nao pelo provedor
+    # global (bug: musica._prov(None) checava so o default do ambiente — parte pinada em
+    # elevenlabs perdia o arco se o default do ambiente fosse outro provedor, ex. stability).
+    # Global forcado explicitamente pra "stability" (nao depende de DEFAULT_PROVIDER do modulo).
+    monkeypatch.setenv("MUNTU_BED_PROVIDER", "stability")
+    monkeypatch.setattr(trilha.musica, "gera_musica", _fake_bed)
+    chamadas = []
+    orig = trilha._plano_da_parte
+
+    def _espiao(*a, **k):
+        chamadas.append(True)
+        return orig(*a, **k)
+    monkeypatch.setattr(trilha, "_plano_da_parte", _espiao)
+    tl = {"climax_t": 8.0, "partes": [
+        {"cena_ini": 1, "cena_fim": 4, "start": 0.0, "end": 16.0, "tipo": "score",
+         "clima": "romantic", "confianca_valence": "alta", "mood": "ballad",
+         "provider": "elevenlabs"}], "stop_t": None}
+    monta_trilha(tl, 16.0)
+    assert chamadas   # _plano_da_parte foi chamado (hoje, com o bug, nao seria)
+
+
 def test_bed_offset_pula_intro_da_musica_pronta(monkeypatch, tmp_path):
     # mp3 pronto: 3s de "intro" silenciosa + 7s de musica; bed_offset=3.0 entra na musica
     f = tmp_path / "musica_pronta.wav"
