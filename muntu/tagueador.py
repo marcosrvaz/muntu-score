@@ -93,8 +93,10 @@ def _bloco_faixas(faixas: list[dict] | None) -> str:
         ano = f" ({fx['ano']})" if fx.get("ano") else ""
         linhas.append(f"- \"{fx.get('titulo', '')}\" — {fx.get('artista', '')}{ano}{gen}"
                       f" heard around {fx.get('em_s', '?')}s")
-    return ("\nTracks IDENTIFIED in this ad's audio by fingerprinting (GROUND TRUTH — "
-            "anchor era/cultura/registro on these, do not contradict them):\n"
+    return ("\nCANDIDATE track IDs from audio fingerprinting — the matcher sometimes "
+            "returns FALSE positives. For each candidate: if it matches what you actually "
+            "HEAR at that position, anchor era/cultura/registro on it and NAME it in the "
+            "registro; if it contradicts your ears, IGNORE it silently:\n"
             + "\n".join(linhas) + "\n")
 
 

@@ -28,7 +28,7 @@ def test_bloco_faixas_no_prompt():
     faixas = [{"titulo": "Blue Danube", "artista": "Strauss", "ano": "1867",
                "generos": ["Classical"], "em_s": 24.0}]
     bloco = tagueador._bloco_faixas(faixas)
-    assert "GROUND TRUTH" in bloco
+    assert "CANDIDATE" in bloco and "FALSE positives" in bloco
     assert "Blue Danube" in bloco and "24.0s" in bloco
     assert tagueador._bloco_faixas([]) == ""
     assert tagueador._bloco_faixas(None) == ""
