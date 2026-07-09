@@ -1,0 +1,12 @@
+{
+  "nome": "default",
+  "climas": ["neutral"],
+  "bpm_range": [100, 132],
+  "tol": 0.05,
+  "lead_ms": 0,
+  "cap_por_compasso": 2,
+  "conf_ritmico": 0.6,
+  "mode": "major",
+  "bed_estilo": "warm corporate bed, soft pads, subtle motion, no drums",
+  "prompt_template": "Corporate underscore bed, {bpm} BPM, professional and optimistic, {mode} key, clean acoustic guitar, warm piano, soft percussion, subtle synth pads, instrumental only, sits under voiceover, clean ending."
+}

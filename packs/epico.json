@@ -1,0 +1,12 @@
+{
+  "nome": "epico",
+  "climas": ["epic"],
+  "bpm_range": [110, 140],
+  "tol": 0.05,
+  "lead_ms": 0,
+  "cap_por_compasso": 2,
+  "conf_ritmico": 0.6,
+  "mode": "major",
+  "bed_estilo": "epic cinematic bed, brass fanfare, soaring strings, orchestral percussion, heroic, building, no vocals",
+  "prompt_template": "Epic cinematic bed, {bpm} BPM, triumphant and building, {mode} key, brass fanfare, soaring strings, orchestral percussion, instrumental only, sits under voiceover, uplifting build to a clean end."
+}

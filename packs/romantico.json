@@ -1,0 +1,49 @@
+{
+  "nome": "romantico",
+  "climas": ["romantic", "tender", "nostalgic"],
+  "bpm_range": [70, 90],
+  "tol": 0.05,
+  "lead_ms": 0,
+  "cap_por_compasso": 2,
+  "conf_ritmico": 0.6,
+  "mode": "major",
+  "bed_estilo": "slow 1980s romantic power ballad, full live band — drums, bass guitar, Rhodes electric piano, rich synth strings — smooth saxophone lead, big gated-reverb drums, soaring sentimental melody, unashamedly kitsch and brega",
+  "prompt_template": "Slow 1980s romantic power ballad played by a FULL BAND — steady drums, warm bass guitar, Rhodes electric piano, rich synth strings — {bpm} BPM, {mode} key, warm and heartfelt, smooth prominent saxophone lead, big gated-reverb drums, live band feel, sentimental 80s adult-contemporary ballad, unashamedly kitsch and cheesy retro brega, caricatured over-the-top warmth, exaggerated melodramatic phrasing, instrumental only, clean ending.",
+  "generos": [
+    "1980s romantic power ballad",
+    "full band with drums and bass",
+    "smooth saxophone lead",
+    "warm Rhodes electric piano",
+    "lush synth strings",
+    "80s adult contemporary",
+    "retro kitsch"
+  ],
+  "negativos": [
+    "aggressive",
+    "distortion",
+    "harsh",
+    "epic orchestral percussion",
+    "bombastic taiko drums",
+    "cinematic epic trailer",
+    "thin sparse arrangement",
+    "solo piano only"
+  ],
+  "arco": {
+    "Intro": ["gentle", "soft Rhodes", "establishing", "drums and bass enter"],
+    "Build": [
+      "full rhythm section groove",
+      "steady drums and warm bass",
+      "saxophone enters",
+      "warm",
+      "rising",
+      "tender"
+    ],
+    "Climax": [
+      "full warm band arrangement with drums and bass",
+      "smooth soaring saxophone solo lead",
+      "soft high violins",
+      "romantic peak, not epic"
+    ],
+    "Outro": ["resolving", "saxophone fading", "winding down", "gentle ending"]
+  }
+}

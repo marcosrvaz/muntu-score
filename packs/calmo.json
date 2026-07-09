@@ -1,0 +1,12 @@
+{
+  "nome": "calmo",
+  "climas": ["calm"],
+  "bpm_range": [70, 100],
+  "tol": 0.05,
+  "lead_ms": 0,
+  "cap_por_compasso": 2,
+  "conf_ritmico": 0.55,
+  "mode": "major",
+  "bed_estilo": "calm serene bed, soft piano, airy synth pads, warm sustained strings, gentle, minimal, no drums",
+  "prompt_template": "Calm serene bed, {bpm} BPM, peaceful and gentle, {mode} key, soft piano, airy synth pads, warm sustained strings, instrumental only, sparse under voiceover, clean ending."
+}

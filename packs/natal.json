@@ -1,0 +1,11 @@
+{
+  "nome": "natal",
+  "bpm_range": [80, 100],
+  "tol": 0.06,
+  "lead_ms": 40,
+  "cap_por_compasso": 2,
+  "conf_ritmico": 0.55,
+  "mode": "major",
+  "bed_estilo": "warm christmas bed, soft bells, gentle strings, cozy, no drums",
+  "prompt_template": "Christmas holiday bed, {bpm} BPM, festive and warm, {mode} key, sleigh bells, orchestral strings, glockenspiel, warm piano, instrumental only, joyful and traditional, sits under voiceover, clean ending."
+}

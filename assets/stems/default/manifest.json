@@ -1,0 +1,8 @@
+{
+  "_nota": "PLACEHOLDER — troca por 5-8 stems TEUS (material livre). papel = hit|pad|perc|riser.",
+  "stems": [
+    { "arquivo": "hit.wav", "clima": "energetico", "papel": "hit" },
+    { "arquivo": "hit.wav", "clima": "sofisticado", "papel": "perc" },
+    { "arquivo": "hit.wav", "clima": "calmo", "papel": "riser" }
+  ]
+}

@@ -3,5 +3,10 @@ scenedetect[opencv]
 pydub
 numpy
 replicate
+elevenlabs
+anthropic
+librosa
+soundfile
+requests
 python-dotenv
 pytest

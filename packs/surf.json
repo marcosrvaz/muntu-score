@@ -1,0 +1,11 @@
+{
+  "nome": "surf",
+  "bpm_range": [110, 135],
+  "tol": 0.05,
+  "lead_ms": 0,
+  "cap_por_compasso": 2,
+  "conf_ritmico": 0.6,
+  "mode": "major",
+  "bed_estilo": "fun surf rock instrumental, Dick Dale style, reverb-drenched tremolo electric guitar, driving surf beat, energetic, retro 1960s surf, punchy drums",
+  "prompt_template": "Fun surf rock instrumental bed, {bpm} BPM, energetic and retro 1960s, {mode} key, reverb-drenched tremolo electric guitar, driving surf beat, punchy drums, instrumental only, sits under voiceover, clean end."
+}

@@ -1,0 +1,12 @@
+{
+  "nome": "melancolico",
+  "climas": ["melancholic"],
+  "bpm_range": [60, 84],
+  "tol": 0.05,
+  "lead_ms": 0,
+  "cap_por_compasso": 2,
+  "conf_ritmico": 0.55,
+  "mode": "minor",
+  "bed_estilo": "melancholic minimal bed, delicate solo piano, warm cello, sparse strings, intimate, magra e esguia, no drums",
+  "prompt_template": "Melancholic minimal bed, {bpm} BPM, bittersweet and intimate, {mode} key, delicate solo piano, warm cello, sparse strings, instrumental only, sparse under voiceover, gentle clean ending."
+}

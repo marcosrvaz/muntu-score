@@ -1,0 +1,12 @@
+{
+  "nome": "playful",
+  "climas": ["joyful", "energetic", "playful", "comedic"],
+  "bpm_range": [110, 135],
+  "tol": 0.05,
+  "lead_ms": 0,
+  "cap_por_compasso": 2,
+  "conf_ritmico": 0.6,
+  "mode": "major",
+  "bed_estilo": "playful upbeat bed, bright plucky synths, bouncy, fun, quirky, warm, no drums",
+  "prompt_template": "Upbeat playful bed, {bpm} BPM, energetic and fun, {mode} key, bright plucky synths, bouncy rhythm, quirky and warm, instrumental only, no lead melody, sits under voiceover, clean end."
+}

@@ -1,0 +1,12 @@
+{
+  "nome": "tenso",
+  "climas": ["tense"],
+  "bpm_range": [80, 120],
+  "tol": 0.05,
+  "lead_ms": 0,
+  "cap_por_compasso": 2,
+  "conf_ritmico": 0.6,
+  "mode": "minor",
+  "bed_estilo": "tense suspense underscore, low sustained strings, sparse dissonant piano, subtle synth drones, unsettling, no drums",
+  "prompt_template": "Tense suspense underscore bed, {bpm} BPM, ominous and unsettling, {mode} key, low sustained strings, sparse dissonant piano stabs, subtle synth drones, instrumental only, limit midrange clutter, sudden end."
+}
