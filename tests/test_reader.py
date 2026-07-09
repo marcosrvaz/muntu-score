@@ -1,3 +1,4 @@
+from muntu import reader
 from muntu.reader import (
     _normaliza, _cobre, _merge_curtas, _chama, timeline_disponivel,
     salva_timeline, carrega_timeline, timeline_scratch_path,
@@ -245,6 +246,32 @@ def test_beats_cena_bool_e_descartado():
     data = {"partes": [], "pontuacoes": [{"cena": True, "sfx": "x"}]}
     t = _normaliza(data, CENAS, 12.0)
     assert t["pontuacoes"] == []
+
+
+def test_normaliza_tags_ricas():
+    data = {"partes": [{"cena_ini": 1, "cena_fim": 2, "tipo": "score", "clima": "comedic",
+                        "mood": "cheesy ballad", "ironia": "Kitsch", "cultura": "Brega",
+                        "instrumentacao": ["saxophone", "", "strings", "drums", "x"]}]}
+    p = _normaliza(data, CENAS, 12.0)["partes"][0]
+    assert p["ironia"] == "kitsch"
+    assert p["cultura"] == "brega"
+    assert p["instrumentacao"] == ["saxophone", "strings", "drums"]
+
+
+def test_normaliza_tags_ausentes_viram_default():
+    # timeline PINada antiga (sem campos novos) segue valida
+    data = {"partes": [{"cena_ini": 1, "cena_fim": 2, "tipo": "score", "clima": "joyful"}]}
+    p = _normaliza(data, CENAS, 12.0)["partes"][0]
+    assert p["ironia"] == "sincero"
+    assert p["cultura"] == ""
+    assert p["instrumentacao"] == []
+
+
+def test_prompt_menciona_ironia_e_vies_comico():
+    # trava de regressao do prompt: as instrucoes novas existem
+    assert "ironia" in reader.PROMPT
+    assert "kitsch" in reader.PROMPT
+    assert "never plain sincero" in reader.PROMPT
 
 
 def test_cobre_partes_sobrepostas_nao_gera_duracao_negativa():

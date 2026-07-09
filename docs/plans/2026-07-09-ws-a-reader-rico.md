@@ -111,7 +111,7 @@ Copiar o bloco de código inteiro de `docs/plans/2026-07-09-arquitetura-learn-ad
 - Consumes: `tags.normaliza_ironia` (Task 1).
 - Produces: cada item de `timeline["partes"]` ganha `ironia: str` (vocab IRONIA), `cultura: str` (lower, pode ser ""), `instrumentacao: list[str]` (máx 3). Timelines antigas (sem os campos) continuam válidas — `_normaliza` põe defaults.
 
-- [ ] **Step 1: Testes que falham** (adicionar em `tests/test_reader.py`, seguindo o padrão existente de chamar `reader._normaliza(payload_fake, cenas, duracao)`)
+- [x] **Step 1: Testes que falham** (adicionar em `tests/test_reader.py`, seguindo o padrão existente de chamar `reader._normaliza(payload_fake, cenas, duracao)`)
 
 ```python
 def test_normaliza_tags_ricas(cenas_2):   # usar/criar fixture de 2 cenas como as existentes
@@ -140,9 +140,9 @@ def test_prompt_menciona_ironia_e_vies_comico():
     assert "never plain sincero" in reader.PROMPT
 ```
 
-- [ ] **Step 2: Rodar e ver falhar** — `pytest tests/test_reader.py -v` → FAIL (KeyError `ironia`).
+- [x] **Step 2: Rodar e ver falhar** — `pytest tests/test_reader.py -v` → FAIL (KeyError `ironia`).
 
-- [ ] **Step 3: Editar `reader.PROMPT`** — inserir depois do bloco de `confianca_valence` (linha ~62), antes de `papel`:
+- [x] **Step 3: Editar `reader.PROMPT`** — inserir depois do bloco de `confianca_valence` (linha ~62), antes de `papel`:
 
 ```python
     "  - ironia: how the musical register relates to the scene: \"sincero\" (music takes "
@@ -166,7 +166,7 @@ E no JSON de retorno (linha ~91), dentro do objeto de parte, acrescentar:
     '"instrumentacao": ["<instrument>"], '
 ```
 
-- [ ] **Step 4: Editar `_normaliza`** — no dict do `partes.append` (linha ~210), depois de `"papel"`:
+- [x] **Step 4: Editar `_normaliza`** — no dict do `partes.append` (linha ~210), depois de `"papel"`:
 
 ```python
             # tags ricas (learn-from-ads camada 1): o que o clima não segura.
@@ -179,9 +179,9 @@ E no JSON de retorno (linha ~91), dentro do objeto de parte, acrescentar:
 
 Import no topo: `from muntu import mood` vira `from muntu import mood, tags as tags_mod`.
 
-- [ ] **Step 5: Rodar** — `pytest tests/test_reader.py -v` → PASS; `pytest tests/` → verde.
+- [x] **Step 5: Rodar** — `pytest tests/test_reader.py -v` → PASS; `pytest tests/` → verde.
 
-- [ ] **Step 6: PARAR — usuário revisa+commita.**
+- [x] **Step 6: PARAR — usuário revisa+commita.**
 
 ---
 

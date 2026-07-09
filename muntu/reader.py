@@ -16,7 +16,7 @@ import base64
 import json
 import os
 
-from muntu import mood
+from muntu import mood, tags as tags_mod
 
 MAX_TOKENS = 48000   # segmentacao narrativa + N partes + guidance rica = MUITO raciocinio Gemini;
 #                      24000 estourava (finish=length -> content vazio -> timeline {} -> fallback).
@@ -60,6 +60,18 @@ PROMPT = (
     "(clearly upbeat/positive OR clearly dark/negative); \"media\"/\"baixa\" if ambiguous or "
     "subtle. Energy/pace is usually readable; the positive-vs-negative sign is the risky "
     "call — be honest.\n"
+    "  - ironia: how the musical register relates to the scene: \"sincero\" (music takes "
+    "the emotion straight), \"kitsch\" (deliberately cheesy/campy — the rom-com that takes "
+    "itself TOO seriously on purpose), \"deadpan\" (straight music played AGAINST absurdity "
+    "— the comedy of contrast), \"parodia\" (mocks a recognizable genre). In a COMEDY film "
+    "every score part MUST take a comedic stance — kitsch, deadpan or parodia — never plain "
+    "sincero: a sincere register in a comedy loses the joke (a romantic scene in a comedy "
+    "is brega/kitsch or deadpan, not a sincere love ballad).\n"
+    "  - cultura: a cultural/regional musical reference when the scene calls for one "
+    "(\"brega\", \"bossa nova\", \"sertanejo\", \"balkan brass\", \"surf rock\", \"mariachi\"); "
+    "empty string if none.\n"
+    "  - instrumentacao: up to 3 signature instruments that DEFINE the register "
+    "([\"saxophone\"], [\"pizzicato strings\", \"ukulele\"]); [] if no strong signature.\n"
     "  - papel: the narrative role of the part (setup / turn / development / payoff / ...).\n"
     "Also identify (film-level):\n"
     "  - era: the film's visual PERIOD read from the footage (clothing, hair, styling, film "
@@ -89,7 +101,10 @@ PROMPT = (
     '"citacoes": [{"cena": <int>, "melodia": "<public-domain melody name>", "motivo": "<situation>"}], '
     '"partes": [{"cena_ini": <int>, "cena_fim": <int>, "tipo": "diegetic"|"score", '
     '"clima": "<one word from the list>", "confianca_valence": "alta"|"media"|"baixa", '
-    '"mood": "<register>", "papel": "<role>"}]} — partes must cover S1..SN in order, no gaps.'
+    '"mood": "<register>", '
+    '"ironia": "sincero"|"kitsch"|"deadpan"|"parodia", "cultura": "<ref or empty>", '
+    '"instrumentacao": ["<instrument>"], '
+    '"papel": "<role>"}]} — partes must cover S1..SN in order, no gaps.'
 )
 
 
@@ -216,6 +231,12 @@ def _normaliza(data: dict, cenas: list[dict], duracao: float) -> dict:
             "confianca_valence": (p.get("confianca_valence") or "media").strip().lower(),  # gate minor
             "mood": (p.get("mood") or "").strip(),             # direcao free-text (refino/diegetico)
             "papel": (p.get("papel") or "").strip(),
+            # tags ricas (learn-from-ads camada 1): o que o clima não segura.
+            # Ausentes (timeline PINada antiga) -> defaults; ver muntu/tags.py
+            "ironia": tags_mod.normaliza_ironia(p.get("ironia")),
+            "cultura": (p.get("cultura") or "").strip().lower() if isinstance(p.get("cultura"), str) else "",
+            "instrumentacao": [str(i).strip() for i in (p.get("instrumentacao") or [])
+                               if isinstance(i, str) and i.strip()][:3],
         })
     climax, stop = data.get("climax"), data.get("stop")
     climax = int(climax) if _e_num(climax) else None
