@@ -21,6 +21,7 @@ Nota de vocabulário: "engraçado" aqui inclui divertido/fun/alto-astral — nã
 - estrada, liberdade, aventura, MOTO -> rock clássico anos 70
 - situação latino-americana, política ou de protesto -> ritmos latinos modernos (cúmbia), puros ou fundidos com eletrônica/acústico
 - tensão DIVERTIDA -> surf rock anos 60 estilo Tarantino
+- churrasco, feijoada, festa brasileira -> samba, pagode
 - força/atitude urbana (sincero) -> hip hop/rap estilo Eminem "8 Mile"
 - comercial de CARRO que precisa passar força -> épica clássica OU hip hop estilo 8 Mile
 - modernidade, coisa jovem e descolada -> indie rock OU indie eletrônico
