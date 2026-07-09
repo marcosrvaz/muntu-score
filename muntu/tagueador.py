@@ -16,7 +16,8 @@ import tempfile
 
 from muntu import mood, tags
 
-MAX_TOKENS = 16000
+MAX_TOKENS = 48000   # ad longo (100+ cenas, ex. Sky La famiglia) truncava em 16k
+#                      (finish=length -> musica []) — mesmo sintoma do reader; espelha o fix.
 
 
 PROMPT_MUSICA = (
