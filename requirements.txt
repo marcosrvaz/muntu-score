@@ -10,3 +10,4 @@ soundfile
 requests
 python-dotenv
 pytest
+supabase
