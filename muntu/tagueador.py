@@ -124,11 +124,24 @@ def tagueia_musica(video_path: str, cortes: list[float], duracao: float,
         wav = _extrai_audio(video_path, sr=32000)  # música pede banda; mp3 = payload 4x menor
         with open(wav, "rb") as f:
             b64_wav = base64.standard_b64encode(f.read()).decode("utf-8")
-        return _normaliza_musica(_chama([
-            {"type": "text", "text": PROMPT_MUSICA + _bloco_faixas(faixas)},
+        prompt = PROMPT_MUSICA + _bloco_faixas(faixas)
+        out = _normaliza_musica(_chama([
+            {"type": "text", "text": prompt},
             {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}},
             {"type": "input_audio", "input_audio": {"data": b64_wav, "format": "mp3"}},
         ]))
+        if not out:
+            # montagem grande SUPRIME a atenção no áudio (MP Marte: 6 rodadas de partes
+            # vazias COM imagem; sem imagem, leu 3 partes na 1ª) -> re-tenta só-áudio.
+            # Perde precisão de span, mas span aproximado >> música invisível.
+            import sys
+            print("[muntu] tagueador musica veio vazio com imagem; re-tento so-audio",
+                  file=sys.stderr)
+            out = _normaliza_musica(_chama([
+                {"type": "text", "text": prompt},
+                {"type": "input_audio", "input_audio": {"data": b64_wav, "format": "mp3"}},
+            ]))
+        return out
     except Exception as e:                     # noqa: BLE001 — best-effort
         import sys
         print(f"[muntu] tagueador musica falhou ({type(e).__name__}: {e})", file=sys.stderr)
